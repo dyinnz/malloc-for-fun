@@ -1,0 +1,6 @@
+.idea
+googletest
+CMakeFiles
+CMakeCache.txt
+cmake_*
+Makefile
