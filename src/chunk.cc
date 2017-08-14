@@ -77,6 +77,7 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, bool is_slab) {
   assert(chunk);
 
   chunk->set_slab(is_slab);
+  chunk->set_arena(&arena_);
   RegisterRadix(chunk);
 
   return chunk;

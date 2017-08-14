@@ -85,10 +85,13 @@ def generate_classes():
             'constexpr int %s = ' % (kNumSmallClasses) 
             + str(len(small_classes)) + ';\n');
         header.write(
-            'constexpr unsigned long kMaxSmallClass = '
+            'constexpr int kMaxSlabRegions = '
+            + str(slab_num[0]) + ';\n');
+        header.write(
+            'constexpr int kMaxSmallClass = '
             + str(kMaxSmallClass) + ';\n');
         header.write(
-            'constexpr unsigned long kMinLargeClass = '
+            'constexpr int kMinLargeClass = '
             + str(kMinLargeClass) + ';\n');
         header.write('extern %s %s[%s];\n' % (
             kUnsignedInt, 'g_size_classes', kNumSizeClasses))

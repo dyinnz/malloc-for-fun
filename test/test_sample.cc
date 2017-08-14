@@ -5,8 +5,11 @@
 #include "size.h"
 #include "pages.h"
 #include "chunk.h"
+#include "arena.h"
 #include "list.h"
 #include "radix_tree.h"
+#include "bitmap.h"
+#include <bitset>
 
 TEST(Hello, SayHello) {
   EXPECT_TRUE(true);
@@ -43,7 +46,8 @@ TEST(OSMap, OSMap) {
 
 TEST(ChunkManager, ChunkManager) {
   BaseAllocator base_alloc;
-  ChunkManager mgr(base_alloc);
+  Arena arena;
+  ChunkManager mgr(arena, base_alloc);
   Chunk *chunk = nullptr;
 
   constexpr size_t huge_size = 4 * 1024 * 1024;
@@ -110,7 +114,8 @@ TEST(RadixTree, RadixTree) {
 
 TEST(RadixTree, ChunkRegister) {
   BaseAllocator base_alloc;
-  ChunkManager mgr(base_alloc);
+  Arena arena;
+  ChunkManager mgr(arena, base_alloc);
 
   constexpr size_t large_size = 4 * kPage;
   Chunk *chunk = mgr.AllocChunk(large_size, sz_to_pind(large_size), false);
@@ -143,6 +148,14 @@ TEST(Size, Size) {
   TestClassIndex(16 * 1024 + 1);
   TestClassIndex(20 * 1024);
   TestClassIndex(32 * 1024);
+}
+
+TEST(Bitmap, Bitmap) {
+  Bitmap<512> bitmap;
+  bitmap.set(10);
+  EXPECT_EQ(bitmap.test(10), true);
+  EXPECT_EQ(bitmap.ffs(), 10);
+  std::cout << std::bitset<64>(bitmap.bits[0]) << std::endl;
 }
 
 int main(int argc, char **argv) {

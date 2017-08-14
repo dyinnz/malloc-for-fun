@@ -8,22 +8,47 @@
 typedef List<Chunk> SlabBin;
 
 class Arena {
-  public:
-    Arena()
-      : chunk_mgr_(base_alloc_) {
-      }
+ public:
+  Arena()
+      : chunk_mgr_(*this, base_alloc_) {
+  }
 
-    void *SmallAlloc(size_t class_size, size_t slab_index) {
-      return nullptr;
+  void *SmallAlloc(size_t cs, size_t sind) {
+    assert(cs <= kMinLargeClass);
+    assert(sz_to_ind(sind) == sind);
+
+    Chunk *slab = nullptr;
+    if (nonfull_slab_[sind].empty()) {
+      const size_t slab_size = g_slab_sizes[sind];
+      const size_t pind = sz_to_pind(slab_size);
+      slab = AllocChunkWrapper(slab_size, pind, kSlabAttr);
+      nonfull_slab_[sind].push(slab);
     }
+    // TODO:
 
-    void *LargeAlloc(size_t class_size, size_t page_index) {
-      return nullptr;
-    }
+    return nullptr;
+  }
 
-  private:
-    BaseAllocator base_alloc_;
-    ChunkManager chunk_mgr_;
-    SlabBin nonfull_slab_[kNumSmallClasses];
-    SlabBin full_slab_[kNumSmallClasses];
+  void *LargeAlloc(size_t cs, size_t pind) {
+    assert(cs >= kMinLargeClass);
+    return AllocChunkWrapper(cs, pind, kSlabAttr);
+  }
+
+ private:
+  Chunk *AllocChunkWrapper(size_t cs, size_t pind, bool is_slab) {
+    assert(cs >= kPage && cs % kPage == 0);
+    assert(sz_to_pind(cs) == pind);
+
+    return chunk_mgr_.AllocChunk(cs, pind, is_slab);
+  }
+
+  void DallocChunkWrapper(Chunk *chunk) {
+    chunk_mgr_.DallocChunk(chunk);
+  }
+
+ private:
+  BaseAllocator base_alloc_;
+  ChunkManager chunk_mgr_;
+  SlabBin nonfull_slab_[kNumSmallClasses];
+  SlabBin full_slab_[kNumSmallClasses];
 };

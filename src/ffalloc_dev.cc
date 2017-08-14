@@ -3,12 +3,14 @@
 
 #include "basic.h"
 #include "pages.h"
+#include "chunk.h"
 
 int main() {
 
   using namespace std;
 
   cout << "hello world" << endl;
-  cout << ChunkAllocMap(kMinAllocMmap) << endl;
+
+  cout << "Chunk size: " << sizeof(Chunk) << endl;
   return 0;
 }

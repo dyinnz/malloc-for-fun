@@ -14,23 +14,33 @@ include_directories(include)
 include_directories(src)
 
 add_library(ffalloc.o OBJECT
-  src/size_classes.cc
-  src/pages.cc
-  src/base_alloc.cc
-  src/chunk.cc
-  src/arena.cc
-  )
+        include/arena.h
+        include/base_alloc.h
+        include/basic.h
+        include/chunk.h
+        include/list.h
+        include/pages.h
+        include/radix_tree.h
+        include/size.h
+        include/size_classes.h
+        include/thread_alloc.h
+        src/arena.cc
+        src/base_alloc.cc
+        src/chunk.cc
+        src/size_classes.cc
+        src/pages.cc
+        include/bitmap.h)
 
 # executable
 add_executable(ffalloc_dev
-  $<TARGET_OBJECTS:ffalloc.o>
-  src/malloc_dev.cc
-  )
+        $<TARGET_OBJECTS:ffalloc.o>
+        src/ffalloc_dev.cc
+        )
 
 # test
 add_executable(test_sample
-  $<TARGET_OBJECTS:ffalloc.o>
-  test/test_sample.cc
-  )
+        $<TARGET_OBJECTS:ffalloc.o>
+        test/test_sample.cc
+        )
 
 target_link_libraries(test_sample gtest)

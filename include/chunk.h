@@ -6,23 +6,41 @@
 #include "base_alloc.h"
 #include "list.h"
 #include "radix_tree.h"
+#include "bitmap.h"
+
+class Arena;
 
 class Chunk {
  public:
-  Chunk(void *address, size_t size)
-      : prev_(nullptr), next_(nullptr),
-        address_(address), size_(size), is_slab_(false) {
+  Chunk(void *address, size_t size) :
+      address_(address), size_(size) {
   }
 
   Chunk() : Chunk(nullptr, 0) {
+  }
+
+  Arena* arena() {
+    return arena_;
+  }
+
+  void set_arena(Arena *arena) {
+    arena_ = arena;
   }
 
   void *address() const {
     return address_;
   }
 
+  void set_address(void *address) {
+    address_ = address;
+  }
+
   size_t size() const {
     return size_;
+  }
+
+  void set_size(size_t size) {
+    size_ = size;
   }
 
   bool is_slab() const {
@@ -49,12 +67,22 @@ class Chunk {
     next_ = node;
   }
 
+  bool has_data() const {
+    return address_ != nullptr;
+  }
+
+  void reset() {
+    memset(this, 0, sizeof(*this));
+  }
+
  private:
-  Chunk *prev_;
-  Chunk *next_;
-  void *address_;
-  size_t size_;
-  bool is_slab_;
+  Chunk *prev_ {nullptr};
+  Chunk *next_ {nullptr};
+  void *address_ {nullptr};
+  size_t size_ {0};
+  Arena *arena_ {nullptr};
+  Bitmap<kMaxSlabRegions> slab_bits_;
+  bool is_slab_ {kNonSlabAttr};
 };
 
 typedef List<Chunk> ChunkList;
@@ -65,8 +93,8 @@ class ChunkManager {
   static constexpr int kMaxBinSize = 2;
 
  public:
-  explicit ChunkManager(BaseAllocator &base_alloc)
-      : base_alloc_(base_alloc) {
+  explicit ChunkManager(Arena &arena, BaseAllocator &base_alloc)
+      : arena_(arena), base_alloc_(base_alloc) {
   }
 
   Chunk *AllocChunk(size_t cs, size_t pind, bool is_slab);
@@ -76,6 +104,7 @@ class ChunkManager {
  private:
 
  private:
+  Arena &arena_;
   BaseAllocator &base_alloc_;
   ChunkList avail_bins[kNumGePageClasses];
 };
