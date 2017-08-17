@@ -1,4 +1,7 @@
 
+#include <bitset>
+#include <random>
+
 #include "gtest/gtest.h"
 
 #include "basic.h"
@@ -9,7 +12,6 @@
 #include "list.h"
 #include "radix_tree.h"
 #include "bitmap.h"
-#include <bitset>
 
 TEST(Hello, SayHello) {
   EXPECT_TRUE(true);
@@ -151,11 +153,44 @@ TEST(Size, Size) {
 }
 
 TEST(Bitmap, Bitmap) {
-  Bitmap<512> bitmap;
-  bitmap.set(10);
-  EXPECT_EQ(bitmap.test(10), true);
-  EXPECT_EQ(bitmap.ffs(), 10);
-  std::cout << std::bitset<64>(bitmap.bits[0]) << std::endl;
+  Bitmap<64> bitmap;
+  for (int i = 0; i < 64; ++i) {
+    int get = bitmap.ffs_and_reset();
+    ASSERT_EQ(get, i);
+  }
+
+  Bitmap<127> bitmap127;
+  EXPECT_TRUE(bitmap127.all());
+  for (int i = 0; i < 64; ++i) {
+    int get = bitmap127.ffs_and_reset();
+    ASSERT_EQ(get, i);
+  }
+  EXPECT_FALSE(bitmap127.all());
+  for (int i = 64; i < 127; ++i) {
+    int get = bitmap127.ffs_and_reset();
+    ASSERT_EQ(get, i);
+  }
+  EXPECT_FALSE(bitmap127.any());
+
+  bitmap127.set(100);
+  EXPECT_TRUE(bitmap127.any());
+  EXPECT_EQ(bitmap127.ffs_and_reset(), 100);
+  EXPECT_FALSE(bitmap127.any());
+}
+
+TEST(ArenaAllocator, ArenaAllocator) {
+  ArenaAllocator aa;
+  std::default_random_engine gen;
+  std::uniform_int_distribution<int> dis(1, 128 * 1024);
+  int times = 100;
+
+  std::cout << "\nArenaAllocator" << std::endl;
+
+  for (int i = 0; i < times; ++i) {
+    void *ptr = aa.alloc(dis(gen));
+    ASSERT_NE(nullptr, ptr);
+    aa.free(ptr);
+  }
 }
 
 int main(int argc, char **argv) {

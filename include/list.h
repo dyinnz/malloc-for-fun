@@ -32,7 +32,7 @@ class List {
   }
 
   T *pop() {
-    if (dummy_head()->next() == dummy_head()) {
+    if (empty()) {
       // TODO: shoud not be here
       assert(false);
 
@@ -68,6 +68,14 @@ class List {
     next->set_prev(prev);
 
     size_ -= 1;
+  }
+
+  T *first() {
+    return dummy_head()->next();
+  }
+
+  T *end() {
+    return dummy_head();
   }
 
   size_t size() const {

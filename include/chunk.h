@@ -12,6 +12,8 @@ class Arena;
 
 class Chunk {
  public:
+  typedef Bitmap<kMaxSlabRegions> SlabBitmap;
+
   Chunk(void *address, size_t size) :
       address_(address), size_(size) {
   }
@@ -51,6 +53,14 @@ class Chunk {
     is_slab_ = is_slab;
   }
 
+  size_t slab_region_size() const {
+    return slab_region_size_;
+  }
+
+  void set_slab_region_size(size_t region_size) {
+    slab_region_size_ = region_size;
+  }
+
   Chunk *prev() const {
     return prev_;
   }
@@ -75,14 +85,19 @@ class Chunk {
     memset(this, 0, sizeof(*this));
   }
 
+  SlabBitmap& slab_bitmap() {
+    return slab_bits_;
+  }
+
  private:
   Chunk *prev_ {nullptr};
   Chunk *next_ {nullptr};
   void *address_ {nullptr};
   size_t size_ {0};
   Arena *arena_ {nullptr};
-  Bitmap<kMaxSlabRegions> slab_bits_;
+  SlabBitmap slab_bits_;
   bool is_slab_ {kNonSlabAttr};
+  size_t slab_region_size_ {0};
 };
 
 typedef List<Chunk> ChunkList;

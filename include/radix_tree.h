@@ -25,7 +25,7 @@ class RadixTree {
 
   public:
     void Insert(void *addr, T *element) {
-      std::cout << __func__ << "(): " << addr << std::endl;
+      std::cout << __func__ << "(): addr: " << addr << " elem: " << element << std::endl;
       const uintptr_t key = reinterpret_cast<uintptr_t>(addr);
       RadixNode **node = &root_;
 
@@ -41,7 +41,6 @@ class RadixTree {
       }
 
       *reinterpret_cast<T**>(node) = element;
-      assert(LookUp(addr) == element);
     }
 
     void Delete(void *addr) {

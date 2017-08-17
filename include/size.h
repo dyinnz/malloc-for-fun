@@ -60,7 +60,6 @@ inline size_t sz_to_ind(size_t size) {
 
 inline size_t sz_to_pind(size_t size) {
   assert(size >= kPage);
-  assert(size % kPage == 0);
 
   if (size >= kMinAllocMmap) {
     return kNumGePageClasses + 1;
