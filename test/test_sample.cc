@@ -13,11 +13,15 @@
 #include "radix_tree.h"
 #include "bitmap.h"
 #include "static.h"
+#include "thread_alloc.h"
 
 using namespace ffmalloc;
 
-TEST(Hello, SayHello) {
-  EXPECT_TRUE(true);
+TEST(BasicInfo, BasicInfo) {
+  using std::cout;
+  using std::endl;
+
+  cout << NAME(Arena) << " " << sizeof(Arena) << endl;
 }
 
 TEST(Alignment, Alignment) {
@@ -156,13 +160,15 @@ TEST(Size, Size) {
 }
 
 TEST(Bitmap, Bitmap) {
-  Bitmap<64> bitmap;
+  Bitmap<512> bitmap;
+  bitmap.init(64);
   for (int i = 0; i < 64; ++i) {
     int get = bitmap.ffs_and_reset();
     ASSERT_EQ(get, i);
   }
 
-  Bitmap<127> bitmap127;
+  Bitmap<512> bitmap127;
+  bitmap127.init(127);
   EXPECT_TRUE(bitmap127.all());
   for (int i = 0; i < 64; ++i) {
     int get = bitmap127.ffs_and_reset();
@@ -181,18 +187,40 @@ TEST(Bitmap, Bitmap) {
   EXPECT_FALSE(bitmap127.any());
 }
 
+TEST(Arena14k, Arena14k) {
+  ArenaAllocator aa;
+
+  for (int i = 0; i < 10; ++i) {
+    aa.ArenaDalloc(aa.ArenaAlloc(14 * 1024));
+  }
+}
+
 TEST(ArenaAllocator, ArenaAllocator) {
   ArenaAllocator aa;
   std::default_random_engine gen;
-  std::uniform_int_distribution<int> dis(1, 128 * 1024);
+  std::uniform_int_distribution<size_t> dis(1, 128 * 1024);
   int times = 100;
 
-  std::cout << "\nArenaAllocator" << std::endl;
+  for (int i = 0; i < times; ++i) {
+    void *ptr = aa.ArenaAlloc(dis(gen));
+    ASSERT_NE(nullptr, ptr);
+    aa.ArenaDalloc(ptr);
+  }
+}
+
+TEST(ThreadAllocator, Exist) {
+  EXPECT_NE(nullptr, Static::thread_alloc());
+}
+
+TEST(ThreadAllocator, Basic) {
+  std::default_random_engine gen;
+  std::uniform_int_distribution<size_t> dis(1, 128 * 1024);
+  int times = 100;
 
   for (int i = 0; i < times; ++i) {
-    void *ptr = aa.alloc(dis(gen));
+    void *ptr = Static::thread_alloc()->ThreadAlloc(dis(gen));
     ASSERT_NE(nullptr, ptr);
-    aa.free(ptr);
+    Static::thread_alloc()->ThreadDalloc(ptr);
   }
 }
 

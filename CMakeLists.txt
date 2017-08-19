@@ -46,3 +46,10 @@ add_executable(test_sample
         )
 
 target_link_libraries(test_sample gtest)
+
+add_executable(test_correct
+        $<TARGET_OBJECTS:ffalloc.o>
+        test/test_correct.cc
+        )
+
+target_link_libraries(test_correct gtest)

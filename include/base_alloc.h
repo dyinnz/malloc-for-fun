@@ -32,6 +32,4 @@ class BaseAllocator {
   }
 };
 
-extern BaseAllocator g_root_alloc;
-
 } // end of namespace ffmalloc

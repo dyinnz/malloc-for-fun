@@ -30,7 +30,7 @@ ChunkAllocMap(size_t size) {
 
 void
 ChunkDallocMap(void *addr, size_t size) {
-  assert(size >= kMinAllocMmap);
+  // assert(size >= kMinAllocMmap);
   assert(nullptr != addr);
 
   if (-1 == munmap(addr, size)) {

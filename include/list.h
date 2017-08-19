@@ -83,8 +83,9 @@ class List {
     }
   }
 
-  void erase(T *node) {
+  void erase(T *node) {;
     assert(nullptr != node);
+    assert(!empty());
     /*
      * prev --- node --- next
      */
@@ -109,11 +110,12 @@ class List {
   }
 
   bool empty() const {
+    assert((0 == size()) == (dummy_head() == dummy_head()->next()));
     return 0 == size();
   }
 
   void print() const {
-    std::cout << "List: " << this << std::endl;
+    std::cout << "List: " << this << " size: " << size_ <<  std::endl;
     for (T *node = dummy_head()->next(); node != dummy_head(); node = node->next()) {
       std::cout
           << " prev: " << node->prev()

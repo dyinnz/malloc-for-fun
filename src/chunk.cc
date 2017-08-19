@@ -56,7 +56,7 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, bool is_slab) {
 
   Chunk *chunk = nullptr;
   if (pind < kNumGePageClasses && !avail_bins[pind].empty()) {
-    std::cout << "bin pind: " << pind << " pop." << std::endl;
+    // std::cout << "bin pind: " << pind << " pop." << std::endl;
 
     chunk = avail_bins[pind].pop();
 
@@ -64,13 +64,15 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, bool is_slab) {
     void *chunk_data = ChunkAllocMap(cs);
     chunk = base_alloc_.New<Chunk>(chunk_data, cs);
 
+    /*
     std::cout << "map chunk: " << chunk
               << " cs: " << cs
               << " pind: " << pind
               << std::endl;
+              */
 
     if (nullptr == chunk) {
-      fprintf(stderr, "%s() alloc from map failed: size %zu\n", __func__, cs);
+      fprintf(stderr, "%s() ArenaAlloc from map failed: size %zu\n", __func__, cs);
       return nullptr;
     }
   }
@@ -91,15 +93,18 @@ ChunkManager::DallocChunk(Chunk *chunk) {
   DeregisterRadix(chunk);
 
   if (pind < kNumGePageClasses && avail_bins[pind].size() < kMaxBinSize) {
-    std::cout << "bin pind: " << pind << " push: " << chunk << std::endl;
+    // std::cout << "bin pind: " << pind << " push: " << chunk << std::endl;
 
     avail_bins[pind].push(chunk);
   } else {
 
+    /*
     std::cout << "unmap chunk: " << chunk
+              << " addr: " << chunk->address()
               << " cs: " << chunk->size()
               << " pind: " << pind
               << std::endl;
+              */
 
     ChunkDallocMap(chunk->address(), chunk->size());
     base_alloc_.Delete(chunk);

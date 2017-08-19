@@ -61,6 +61,7 @@ class Chunk : public ListNode<Chunk> {
 
   void set_slab_region_size(size_t region_size) {
     slab_region_size_ = region_size;
+    slab_bitmap().init(size_ / slab_region_size_);
   }
 
   bool has_data() const {
@@ -72,14 +73,14 @@ class Chunk : public ListNode<Chunk> {
   }
 
   SlabBitmap &slab_bitmap() {
-    return slab_bits_;
+    return slab_bitmap_;
   }
 
  private:
   void *address_{nullptr};
   size_t size_{0};
   Arena *arena_{nullptr};
-  SlabBitmap slab_bits_;
+  SlabBitmap slab_bitmap_;
   bool is_slab_{kNonSlabAttr};
   size_t slab_region_size_{0};
 };

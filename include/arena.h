@@ -5,6 +5,7 @@
 #include "chunk.h"
 #include "list.h"
 #include "static.h"
+#include <iostream>
 
 namespace ffmalloc {
 
@@ -17,56 +18,8 @@ class Arena {
       : chunk_mgr_(*this, base_alloc_) {
   }
 
-  void *SmallAlloc(size_t cs, size_t sind) {
-    assert(cs <= kMinLargeClass);
-    assert(sz_to_ind(cs) == sind);
-
-    if (nonfull_slab_[sind].empty()) {
-      const size_t slab_size = lookup_slab_size(sind);
-      const size_t pind = sz_to_pind(slab_size);
-      Chunk *new_slab = AllocChunkWrapper(slab_size, pind, kSlabAttr);
-      new_slab->set_slab_region_size(cs);
-      if (nullptr == new_slab) {
-        fprintf(stderr, "%s(): alloc slab failed: cs %zu, sind %zu\n",
-                __func__, cs, sind);
-        return nullptr;
-      }
-      nonfull_slab_[sind].push(new_slab);
-    }
-
-    Chunk *slab = nonfull_slab_[sind].first();
-    Chunk::SlabBitmap &bitmap = slab->slab_bitmap();
-    int index = bitmap.ffs_and_reset();
-
-    assert(-1 != index);
-    if (!bitmap.any()) {
-      nonfull_slab_[sind].erase(slab);
-      full_slab_[sind].push(slab);
-    }
-
-    void *region = static_cast<char *>(slab->address()) + index * cs;
-    return region;
-  }
-
-  void SmallDalloc(void *region, Chunk *slab) {
-    size_t cs = slab->slab_region_size();
-    size_t sind = sz_to_ind(cs);
-    size_t index = (static_cast<char *>(region)
-        - static_cast<char *>(slab->address())) / cs;
-    Chunk::SlabBitmap &bitmap = slab->slab_bitmap();
-    bool is_full = bitmap.any();
-
-    bitmap.set(index);
-    if (is_full) {
-      full_slab_[sind].erase(slab);
-      nonfull_slab_[sind].push(slab);
-    }
-
-    if (bitmap.all()) {
-      nonfull_slab_[sind].erase(slab);
-      DallocChunkWrapper(slab);
-    }
-  }
+  void *SmallAlloc(size_t cs, size_t sind);
+  void SmallDalloc(void *region, Chunk *slab);
 
   void *LargeAlloc(size_t cs, size_t pind) {
     assert(cs >= kMinLargeClass);
@@ -80,6 +33,10 @@ class Arena {
 
   void LargeDalloc(Chunk *chunk) {
     DallocChunkWrapper(chunk);
+  }
+
+  BaseAllocator& base_alloc() {
+    return base_alloc_;
   }
 
  private:
@@ -97,13 +54,13 @@ class Arena {
  private:
   BaseAllocator base_alloc_;
   ChunkManager chunk_mgr_;
-  SlabBin nonfull_slab_[kNumSmallClasses];
-  SlabBin full_slab_[kNumSmallClasses];
-};
+  SlabBin nonempty_slab[kNumSmallClasses];
+  SlabBin empty_slab[kNumSmallClasses];
+} __attribute__((aligned (128)));
 
 class ArenaAllocator {
  public:
-  void *alloc(size_t size) {
+  void *ArenaAlloc(size_t size) {
     size_t cs = sz_to_cs(size);
     if (size <= kMaxSmallClass) {
       size_t sind = sz_to_ind(size);
@@ -115,8 +72,12 @@ class ArenaAllocator {
     }
   }
 
-  void free(void *ptr) {
+  void ArenaDalloc(void *ptr) {
     Chunk *chunk = Static::chunk_rtree()->LookUp(ptr);
+    {
+      char *addr = static_cast<char *>(chunk->address());
+      assert(addr <= ptr && ptr < addr + chunk->size());
+    }
     if (chunk->is_slab()) {
       arena_.SmallDalloc(ptr, chunk);
     } else {

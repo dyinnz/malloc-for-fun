@@ -9,7 +9,7 @@ namespace ffmalloc {
 constexpr size_t kCacheLine = 64;
 constexpr size_t kPage = 4 * 1024; // 4K
 constexpr size_t kMinAllocMmap = 2 * 1024 * 1024; // 2M
-constexpr size_t kStandardExtent = kMinAllocMmap;
+constexpr size_t kStandardChunk = kMinAllocMmap;
 constexpr bool kSlabAttr = true;
 constexpr bool kNonSlabAttr = false;
 
@@ -31,8 +31,13 @@ inline size_t page_ceil(size_t size) {
   return align_ceil_pow2(size, kPage);
 }
 
-inline size_t standard_extent_ceil(size_t size) {
-  return align_ceil_pow2(size, kStandardExtent);
+inline size_t standard_chunk_ceil(size_t size) {
+  return align_ceil_pow2(size, kStandardChunk);
 }
+
+#define NAME(a) (#a)
+
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
 
 } // end of namespace ffmalloc
