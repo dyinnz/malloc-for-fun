@@ -13,7 +13,7 @@ kPage = 4 * 1024
 kMaxSmallClass = 14 * 1024 # 14K
 kMinLargeClass = 16 * 1024 # 14K
 
-kMaxLookupClass = 4 * 1024
+kMaxLookupSize = 4 * 1024
 
 kUnsignedLong = 'unsigned long'
 kUnsignedInt = 'unsigned int'
@@ -34,7 +34,7 @@ def gen_sz_to_ind_lookup(classes):
     index_lookup = []
     curr_size = 8
     curr_index = 0
-    while curr_size <= kMaxLookupClass:
+    while curr_size <= kMaxLookupSize:
         if curr_size > classes[curr_index]:
             curr_index += 1
         index_lookup.append(curr_index)
@@ -75,6 +75,7 @@ def generate_classes():
 
     with open(kHeaderFilename, 'w') as header:
         header.write('#pragma once\n\n')
+        header.write('namespace ffmalloc {\n\n')
         header.write(
             'constexpr int %s = ' % (kNumSizeClasses) 
             + str(len(classes)) + ';\n');
@@ -93,6 +94,11 @@ def generate_classes():
         header.write(
             'constexpr int kMinLargeClass = '
             + str(kMinLargeClass) + ';\n');
+
+        header.write('\n\nnamespace details {\n\n')
+        header.write(
+            'constexpr int kMaxLookupSize = '
+            + str(kMaxLookupSize) + ';\n');
         header.write('extern %s %s[%s];\n' % (
             kUnsignedInt, 'g_size_classes', kNumSizeClasses))
         header.write('extern %s %s[%s];\n' % (
@@ -105,9 +111,14 @@ def generate_classes():
             kUnsignedShort, 'g_slab_num', kNumSmallClasses))
         header.write('extern %s %s[%s];\n' % (
             kUnsignedShort, 'g_index_lookup', len(index_lookup)))
+        header.write('\n}// end of namespace details\n')
+
+        header.write('\n}// end of namespace ffmalloc\n')
 
     with open(kSourceFilename, 'w') as source:
         source.write('#include "size_classes.h"\n\n')
+        source.write('namespace ffmalloc {\n\n')
+        source.write('namespace details {\n\n')
         dump_code(source, kUnsignedInt, 
             'g_size_classes', kNumSizeClasses, classes)
         dump_code(source, kUnsignedInt, 
@@ -120,6 +131,8 @@ def generate_classes():
             'g_slab_num', kNumSmallClasses, slab_num)
         dump_code(source, kUnsignedShort, 
             'g_index_lookup', len(index_lookup), index_lookup)
+        source.write('\n}// end of namespace details\n')
+        source.write('\n}// end of namespace ffmalloc\n')
 
 if __name__ == '__main__':
     generate_classes()

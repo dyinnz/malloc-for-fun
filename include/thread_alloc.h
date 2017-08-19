@@ -4,40 +4,44 @@
 #include "size_classes.h"
 #include "arena.h"
 
+namespace ffmalloc {
+
 class CacheBin {
-  public:
-    void *PopRegion();
+ public:
+  void *PopRegion();
 
-    void PushRegion(void *ptr);
+  void PushRegion(void *ptr);
 
-  private:
-    void FillCaches();
+ private:
+  void FillCaches();
 
-    void FlushCaches();
+  void FlushCaches();
 
-  private:
-    Arena &arena_;
-    const size_t capacity_;
-    size_t num_;
-    void *caches_;
+ private:
+  Arena &arena_;
+  const size_t capacity_;
+  size_t num_;
+  void *caches_;
 };
 
 class ThreadAllocator {
-  public:
-    void *ThreadAlloc(size_t size) {
-      if (size <= kMaxSmallClass) {
+ public:
+  void *ThreadAlloc(size_t size) {
+    if (size <= kMaxSmallClass) {
 
-      } else {
-      }
-
-      return nullptr;
+    } else {
     }
 
-    void ThreadDalloc(void *ptr) {
-      // look up radix tree
-    }
+    return nullptr;
+  }
 
-  private:
-    Arena &arena_;
-    CacheBin *cache_bins_[kNumSmallClasses];
+  void ThreadDalloc(void *ptr) {
+    // look up radix tree
+  }
+
+ private:
+  Arena &arena_;
+  CacheBin *cache_bins_[kNumSmallClasses];
 };
+
+} // end of namespace ffmalloc

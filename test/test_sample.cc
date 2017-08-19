@@ -12,6 +12,9 @@
 #include "list.h"
 #include "radix_tree.h"
 #include "bitmap.h"
+#include "static.h"
+
+using namespace ffmalloc;
 
 TEST(Hello, SayHello) {
   EXPECT_TRUE(true);
@@ -123,10 +126,10 @@ TEST(RadixTree, ChunkRegister) {
   Chunk *chunk = mgr.AllocChunk(large_size, sz_to_pind(large_size), false);
 
   char *ptr = static_cast<char *>(chunk->address());
-  EXPECT_EQ(chunk, g_radix_tree.LookUp(ptr));
-  ASSERT_DEATH({ g_radix_tree.LookUp(ptr + kPage); }, "");
-  ASSERT_DEATH({ g_radix_tree.LookUp(ptr + 2 * kPage); }, "");
-  EXPECT_EQ(chunk, g_radix_tree.LookUp(ptr + 3 * kPage));
+  EXPECT_EQ(chunk, Static::chunk_rtree()->LookUp(ptr));
+  ASSERT_DEATH({ Static::chunk_rtree()->LookUp(ptr + kPage); }, "");
+  ASSERT_DEATH({ Static::chunk_rtree()->LookUp(ptr + 2 * kPage); }, "");
+  EXPECT_EQ(chunk, Static::chunk_rtree()->LookUp(ptr + 3 * kPage));
 
   mgr.DallocChunk(chunk);
 }

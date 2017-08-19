@@ -3,18 +3,19 @@
 
 #include "chunk.h"
 #include "pages.h"
+#include "static.h"
 
-RadixTree<Chunk> g_radix_tree;
+namespace ffmalloc {
 
 static void RegisterRadix(Chunk *chunk) {
-  char *head = static_cast<char*>(chunk->address());
+  char *head = static_cast<char *>(chunk->address());
   char *tail = head + chunk->size() - kPage;
   // first page
-  g_radix_tree.Insert(head, chunk);
+  Static::chunk_rtree()->Insert(head, chunk);
 
   // last page
   if (chunk->size() > kPage) {
-    g_radix_tree.Insert(tail, chunk);
+    Static::chunk_rtree()->Insert(tail, chunk);
   }
 
   // interior page
@@ -22,20 +23,20 @@ static void RegisterRadix(Chunk *chunk) {
     for (char *curr = head + kPage;
          curr < tail;
          curr += kPage) {
-      g_radix_tree.Insert(curr, chunk);
+      Static::chunk_rtree()->Insert(curr, chunk);
     }
   }
 }
 
 static void DeregisterRadix(Chunk *chunk) {
-    char *head = static_cast<char*>(chunk->address());
+  char *head = static_cast<char *>(chunk->address());
   char *tail = head + chunk->size() - kPage;
   // first page
-  g_radix_tree.Delete(head);
+  Static::chunk_rtree()->Delete(head);
 
   // last page
   if (chunk->size() > kPage) {
-    g_radix_tree.Delete(tail);
+    Static::chunk_rtree()->Delete(tail);
   }
 
   // interior page
@@ -43,7 +44,7 @@ static void DeregisterRadix(Chunk *chunk) {
     for (char *curr = head + kPage;
          curr < tail;
          curr += kPage) {
-      g_radix_tree.Delete(curr);
+      Static::chunk_rtree()->Delete(curr);
     }
   }
 }
@@ -104,3 +105,5 @@ ChunkManager::DallocChunk(Chunk *chunk) {
     base_alloc_.Delete(chunk);
   }
 }
+
+} // end of namespace ffmalloc

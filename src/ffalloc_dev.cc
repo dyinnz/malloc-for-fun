@@ -8,6 +8,7 @@
 int main() {
 
   using namespace std;
+  using namespace ffmalloc;
 
   cout << "hello world" << endl;
 

@@ -7,6 +7,8 @@
 #include <cstring>
 #include <iostream>
 
+namespace ffmalloc {
+
 template<size_t N>
 class Bitmap {
  private:
@@ -58,9 +60,9 @@ class Bitmap {
     }
 
     if (0 != N % kLongBits) {
-      return bits[kArraySize-1] == kLastMask;
+      return bits[kArraySize - 1] == kLastMask;
     } else {
-      return ~bits[kArraySize-1];
+      return ~bits[kArraySize - 1];
     }
   }
 
@@ -78,3 +80,5 @@ class Bitmap {
   // private:
   long bits[kArraySize];
 };
+
+} // end of namespace ffmalloc

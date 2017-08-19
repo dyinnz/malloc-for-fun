@@ -8,9 +8,11 @@
 #include "radix_tree.h"
 #include "bitmap.h"
 
+namespace ffmalloc {
+
 class Arena;
 
-class Chunk {
+class Chunk : public ListNode<Chunk> {
  public:
   typedef Bitmap<kMaxSlabRegions> SlabBitmap;
 
@@ -21,7 +23,7 @@ class Chunk {
   Chunk() : Chunk(nullptr, 0) {
   }
 
-  Arena* arena() {
+  Arena *arena() {
     return arena_;
   }
 
@@ -61,22 +63,6 @@ class Chunk {
     slab_region_size_ = region_size;
   }
 
-  Chunk *prev() const {
-    return prev_;
-  }
-
-  Chunk *next() const {
-    return next_;
-  }
-
-  void set_prev(Chunk *node) {
-    prev_ = node;
-  }
-
-  void set_next(Chunk *node) {
-    next_ = node;
-  }
-
   bool has_data() const {
     return address_ != nullptr;
   }
@@ -85,22 +71,21 @@ class Chunk {
     memset(this, 0, sizeof(*this));
   }
 
-  SlabBitmap& slab_bitmap() {
+  SlabBitmap &slab_bitmap() {
     return slab_bits_;
   }
 
  private:
-  Chunk *prev_ {nullptr};
-  Chunk *next_ {nullptr};
-  void *address_ {nullptr};
-  size_t size_ {0};
-  Arena *arena_ {nullptr};
+  void *address_{nullptr};
+  size_t size_{0};
+  Arena *arena_{nullptr};
   SlabBitmap slab_bits_;
-  bool is_slab_ {kNonSlabAttr};
-  size_t slab_region_size_ {0};
+  bool is_slab_{kNonSlabAttr};
+  size_t slab_region_size_{0};
 };
 
 typedef List<Chunk> ChunkList;
+// typedef RadixTree<Chunk> ChunkRTree;
 
 class ChunkManager {
  private:
@@ -124,4 +109,4 @@ class ChunkManager {
   ChunkList avail_bins[kNumGePageClasses];
 };
 
-extern RadixTree<Chunk> g_radix_tree;
+} // end of namespace ffmalloc

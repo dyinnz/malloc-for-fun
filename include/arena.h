@@ -4,10 +4,14 @@
 #include "size_classes.h"
 #include "chunk.h"
 #include "list.h"
+#include "static.h"
 
-typedef List<Chunk> SlabBin;
+namespace ffmalloc {
 
 class Arena {
+ private:
+  typedef List<Chunk> SlabBin;
+
  public:
   Arena()
       : chunk_mgr_(*this, base_alloc_) {
@@ -18,7 +22,7 @@ class Arena {
     assert(sz_to_ind(cs) == sind);
 
     if (nonfull_slab_[sind].empty()) {
-      const size_t slab_size = g_slab_sizes[sind];
+      const size_t slab_size = lookup_slab_size(sind);
       const size_t pind = sz_to_pind(slab_size);
       Chunk *new_slab = AllocChunkWrapper(slab_size, pind, kSlabAttr);
       new_slab->set_slab_region_size(cs);
@@ -47,8 +51,8 @@ class Arena {
   void SmallDalloc(void *region, Chunk *slab) {
     size_t cs = slab->slab_region_size();
     size_t sind = sz_to_ind(cs);
-    size_t index = (static_cast<char*>(region)
-        - static_cast<char*>(slab->address())) / cs;
+    size_t index = (static_cast<char *>(region)
+        - static_cast<char *>(slab->address())) / cs;
     Chunk::SlabBitmap &bitmap = slab->slab_bitmap();
     bool is_full = bitmap.any();
 
@@ -66,7 +70,7 @@ class Arena {
 
   void *LargeAlloc(size_t cs, size_t pind) {
     assert(cs >= kMinLargeClass);
-    Chunk * chunk = AllocChunkWrapper(cs, pind, kNonSlabAttr);
+    Chunk *chunk = AllocChunkWrapper(cs, pind, kNonSlabAttr);
     if (nullptr == chunk) {
       return nullptr;
     } else {
@@ -112,7 +116,7 @@ class ArenaAllocator {
   }
 
   void free(void *ptr) {
-    Chunk *chunk = g_radix_tree.LookUp(ptr);
+    Chunk *chunk = Static::chunk_rtree()->LookUp(ptr);
     if (chunk->is_slab()) {
       arena_.SmallDalloc(ptr, chunk);
     } else {
@@ -125,3 +129,4 @@ class ArenaAllocator {
   Arena arena_;
 };
 
+} // end of namespace ffmalloc

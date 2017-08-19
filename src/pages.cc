@@ -8,6 +8,8 @@
 
 #include "basic.h"
 
+namespace ffmalloc {
+
 void *
 ChunkAllocMap(size_t size) {
   // TODO: tmp
@@ -35,3 +37,5 @@ ChunkDallocMap(void *addr, size_t size) {
     fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
   }
 }
+
+} // end of namespace ffmalloc

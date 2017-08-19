@@ -4,6 +4,32 @@
 #include <cassert>
 #include <iostream>
 
+namespace ffmalloc {
+
+template<class T>
+class ListNode {
+ public:
+  T *prev() const {
+    return prev_;
+  }
+
+  T *next() const {
+    return next_;
+  }
+
+  void set_prev(T *node) {
+    prev_ = node;
+  }
+
+  void set_next(T *node) {
+    next_ = node;
+  }
+
+ private:
+  T *prev_{nullptr};
+  T *next_{nullptr};
+};
+
 template<class T>
 class List {
  public:
@@ -98,14 +124,16 @@ class List {
 
  private:
   const T *dummy_head() const {
-    return &head_data_;
+    return reinterpret_cast<const T *>(&dummy_head_);
   }
 
   T *dummy_head() {
-    return &head_data_;
+    return reinterpret_cast<T *>(&dummy_head_);
   }
 
  private:
   size_t size_{0};
-  T head_data_;
+  ListNode<T> dummy_head_;
 };
+
+} // end of namespace ffmalloc
