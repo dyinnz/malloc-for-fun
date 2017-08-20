@@ -50,6 +50,17 @@ target_link_libraries(test_sample gtest)
 add_executable(test_correct
         $<TARGET_OBJECTS:ffalloc.o>
         test/test_correct.cc
-        )
+        test/test_common.h)
 
 target_link_libraries(test_correct gtest)
+
+add_executable(test_multithread
+        $<TARGET_OBJECTS:ffalloc.o>
+        test/test_multithread.cc
+        test/test_common.h)
+
+target_link_libraries(test_multithread 
+  gtest
+  boost_system
+  boost_thread-mt
+  )

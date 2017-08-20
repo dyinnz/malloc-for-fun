@@ -67,6 +67,8 @@ class RadixTree {
   }
 
   T *LookUp(void *addr) {
+    //std::cout << __func__ << "(): " << addr << std::endl;
+
     const uintptr_t key = reinterpret_cast<uintptr_t>(addr);
     RadixNode *node = root_;
     assert(nullptr != node);
@@ -87,7 +89,6 @@ class RadixTree {
 
     // std::cout << __func__ << "(): " << addr << " elem: " << node->elements[key1] << std::endl;
     return node->elements[key1];
-
   }
 
  private:

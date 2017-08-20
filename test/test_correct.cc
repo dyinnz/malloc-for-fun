@@ -9,24 +9,9 @@
 #include "arena.h"
 #include "static.h"
 #include "thread_alloc.h"
+#include "test_common.h"
 
-using std::vector;
 using namespace ffmalloc;
-
-struct MemoryRecord {
-  uint64_t *ptr;
-  size_t mem_size;
-  uint64_t magic;
-};
-
-struct OperationWindow {
-  vector<MemoryRecord> records;
-  std::function<void *(size_t)> malloc;
-  std::function<void(void *)> free;
-  size_t times;
-  size_t left;
-  size_t right;
-};
 
 void RunWindowTest(OperationWindow window) {
   std::default_random_engine gen;

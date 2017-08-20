@@ -58,7 +58,7 @@ class CacheBin {
       Chunk *slab = Static::chunk_rtree()->LookUp(ptr);
       slab->arena()->SmallDalloc(ptr, slab);
     }
-    memmove(caches_, caches_ + count, num_ - count);
+    memmove(caches_, caches_ + count, (num_ - count) * sizeof(void *));
     num_ -= count;
   }
 
@@ -75,6 +75,12 @@ class ThreadAllocator {
  public:
   ThreadAllocator(Arena &arena) : arena_(arena) {
     memset(cache_bins_, 0, sizeof(CacheBin *) * kNumSmallClasses);
+    std::cout << " bound arena: " << &arena << std::endl;
+  }
+
+  ~ThreadAllocator() {
+    // TODO:
+    // use pthread tls
   }
 
   void *ThreadAlloc(size_t size) {

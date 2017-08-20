@@ -26,6 +26,10 @@ class Static {
 
   static Arena *next_arena();
 
+  static void set_num_arena(size_t num) {
+    num_arenas_ = num;
+  }
+
   static ChunkRTree *chunk_rtree() {
     return chunk_rtree_;
   }
@@ -49,6 +53,7 @@ class Static {
   static Static init_data_;
   static Arena *arenas_[kMaxCPUs];
   static std::atomic_ulong arena_index_;
+  static size_t num_arenas_;
   static ChunkRTree *chunk_rtree_;
   static BaseAllocator *root_alloc_;
   static thread_local ThreadAllocator *thread_alloc_;
