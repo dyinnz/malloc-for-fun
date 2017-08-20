@@ -40,4 +40,14 @@ inline size_t standard_chunk_ceil(size_t size) {
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
+#define atomic_cas(ptr, expected, desired) \
+  __atomic_compare_exchange_n(ptr, expected, desired, \
+                              false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)
+
+template<class T>
+bool atomic_cas_simple(T *ptr, T desired) {
+  T null_data = nullptr;
+  return atomic_cas(ptr, &null_data, desired);
+}
+
 } // end of namespace ffmalloc

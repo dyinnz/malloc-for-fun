@@ -3,25 +3,26 @@
 
 #include <iostream>
 #include <cstring>
+#include <cassert>
 #include "static.h"
+#include "basic.h"
 
 namespace ffmalloc {
 
 template<class T>
 class RadixTree {
  private:
-  static constexpr int kRadixLayer = 3;
-  static constexpr int kRadixLayerLogSize = 12;
-  static constexpr int kRadixLayerSize = 1 << 12;
-  static constexpr int kRadixLayerMask = (1 << 12) - 1;
+  static constexpr int kLayerLogSize = 12;
+  static constexpr int kLayerSize = 1 << 12;
+  static constexpr int kLayerMask = (1 << 12) - 1;
 
   struct RadixNode {
     RadixNode() {
-      memset(children, 0, sizeof(RadixNode *) * kRadixLayerSize);
+      memset(children, 0, sizeof(RadixNode *) * kLayerSize);
     }
     union {
-      RadixNode *children[kRadixLayerSize];
-      T *elements[kRadixLayerSize];
+      RadixNode *children[kLayerSize];
+      T *elements[kLayerSize];
     };
   };
 
@@ -29,36 +30,41 @@ class RadixTree {
   void Insert(void *addr, T *element) {
     // std::cout << __func__ << "(): addr: " << addr << " elem: " << element << std::endl;
     const uintptr_t key = reinterpret_cast<uintptr_t>(addr);
-    RadixNode **node = &root_;
 
-    for (int i = kRadixLayer * kRadixLayerLogSize;
-         i > 0; i -= kRadixLayerLogSize) {
-      if (nullptr == *node) {
-        *node = Static::root_alloc()->New<RadixNode>();
+    const uintptr_t key3 = (key >> (kLayerLogSize * 3)) & kLayerMask;
+    RadixNode **node = &root_.children[key3];
+
+    if (unlikely(nullptr == *node)) {
+      RadixNode *temp_node = Static::root_alloc()->New<RadixNode>();
+      if (!atomic_cas_simple(node, temp_node)) {
+        Static::root_alloc()->Delete(temp_node);
       }
-
-      const uintptr_t sub_key = (key >> i) & kRadixLayerMask;
-      // std::cout << std::hex << sub_key << " " << *node << " " << (*node)->children[sub_key] << std::endl;
-      node = &(*node)->children[sub_key];
     }
+    const uintptr_t key2 = (key >> (kLayerLogSize * 2)) & kLayerMask;
+    node = &(*node)->children[key2];
 
-    *reinterpret_cast<T **>(node) = element;
+    if (unlikely(nullptr == *node)) {
+      RadixNode *temp_node = Static::root_alloc()->New<RadixNode>();
+      if (!atomic_cas_simple(node, temp_node)) {
+        Static::root_alloc()->Delete(temp_node);
+      }
+    }
+    const uintptr_t key1 = (key >> (kLayerLogSize * 1)) & kLayerMask;
+    (*node)->elements[key1] = element;
   }
 
   void Delete(void *addr) {
     const uintptr_t key = reinterpret_cast<uintptr_t>(addr);
-    RadixNode *node = root_;
+
+    const uintptr_t key3 = (key >> (kLayerLogSize * 3)) & kLayerMask;
+    RadixNode *node = root_.children[key3];
     assert(nullptr != node);
 
-    const uintptr_t key3 = (key >> (kRadixLayerLogSize * 3)) & kRadixLayerMask;
-    node = node->children[key3];
-    assert(nullptr != node);
-
-    const uintptr_t key2 = (key >> (kRadixLayerLogSize * 2)) & kRadixLayerMask;
+    const uintptr_t key2 = (key >> (kLayerLogSize * 2)) & kLayerMask;
     node = node->children[key2];
     assert(nullptr != node);
 
-    const uintptr_t key1 = (key >> (kRadixLayerLogSize * 1)) & kRadixLayerMask;
+    const uintptr_t key1 = (key >> (kLayerLogSize * 1)) & kLayerMask;
     assert(nullptr != node->elements[key1]);
 
     // std::cout << __func__ << "(): " << addr << " elem: " << node->elements[key1] << std::endl;
@@ -70,21 +76,16 @@ class RadixTree {
     //std::cout << __func__ << "(): " << addr << std::endl;
 
     const uintptr_t key = reinterpret_cast<uintptr_t>(addr);
-    RadixNode *node = root_;
+
+    const uintptr_t key3 = (key >> (kLayerLogSize * 3)) & kLayerMask;
+    RadixNode *node = root_.children[key3];
     assert(nullptr != node);
 
-    const uintptr_t key3 = (key >> (kRadixLayerLogSize * 3)) & kRadixLayerMask;
-    // std::cout << std::hex << key3 << " " << node << " " << node->children[key3] << std::endl;
-    node = node->children[key3];
-    assert(nullptr != node);
-
-    const uintptr_t key2 = (key >> (kRadixLayerLogSize * 2)) & kRadixLayerMask;
-    // std::cout << std::hex << key2 << " " << node << " " << node->children[key2] << std::endl;
+    const uintptr_t key2 = (key >> (kLayerLogSize * 2)) & kLayerMask;
     node = node->children[key2];
     assert(nullptr != node);
 
-    const uintptr_t key1 = (key >> (kRadixLayerLogSize * 1)) & kRadixLayerMask;
-    // std::cout << std::hex << key1 << " " << node << " " << node->children[key1] << std::endl;
+    const uintptr_t key1 = (key >> (kLayerLogSize * 1)) & kLayerMask;
     assert(nullptr != node->children[key1]);
 
     // std::cout << __func__ << "(): " << addr << " elem: " << node->elements[key1] << std::endl;
@@ -92,7 +93,7 @@ class RadixTree {
   }
 
  private:
-  RadixNode *root_{nullptr};
+  RadixNode root_;
 };
 
 } // end of namespace ffmalloc

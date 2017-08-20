@@ -75,7 +75,7 @@ class ThreadAllocator {
  public:
   ThreadAllocator(Arena &arena) : arena_(arena) {
     memset(cache_bins_, 0, sizeof(CacheBin *) * kNumSmallClasses);
-    std::cout << " bound arena: " << &arena << std::endl;
+    printf("%s(): thread[%p] binds arena[%p]\n", __func__, this, &arena);
   }
 
   ~ThreadAllocator() {

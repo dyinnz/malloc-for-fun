@@ -28,7 +28,7 @@ OperationWindow GenMTSmallWindow() {
   OperationWindow window;
   window.left = 32;
   window.right = 128;
-  window.times = 100;
+  window.times = 10;
 
   size_t length = 10000;
   window.records.reserve(length);
@@ -84,11 +84,10 @@ TEST(MultiThread, C1T1) {
   }
 }
 
-TEST(MultiThread, System) {
+TEST(MultiThread, C8T8) {
   // TODO
-  unsigned int num_threads = 2;
-  // Static::set_num_arena(1);
-  Static::set_num_arena(std::thread::hardware_concurrency());
+  unsigned int num_threads = 8;
+  Static::set_num_arena(8);
   barrier barr(num_threads);
 
   std::vector<thread> threads;

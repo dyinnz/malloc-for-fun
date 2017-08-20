@@ -1,6 +1,7 @@
 
 #include <bitset>
 #include <random>
+#include <atomic>
 
 #include "gtest/gtest.h"
 
@@ -21,7 +22,10 @@ TEST(BasicInfo, BasicInfo) {
   using std::cout;
   using std::endl;
 
-  cout << NAME(Arena) << " " << sizeof(Arena) << endl;
+  cout << "Arena " << sizeof(Arena) << endl;
+  cout << "ThreadAllocator " << sizeof(ThreadAllocator) << endl;
+  cout << "CacheBin " << sizeof(CacheBin) << endl;
+  cout << "atomic " << sizeof(std::atomic<void*>) << endl;
 }
 
 TEST(Alignment, Alignment) {
