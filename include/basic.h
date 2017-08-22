@@ -50,4 +50,6 @@ bool atomic_cas_simple(T *ptr, T desired) {
   return atomic_cas(ptr, &null_data, desired);
 }
 
+#define CACHELINE_ALIGN __attribute__((aligned (64)))
+
 } // end of namespace ffmalloc

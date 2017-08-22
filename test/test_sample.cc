@@ -22,10 +22,14 @@ TEST(BasicInfo, BasicInfo) {
   using std::cout;
   using std::endl;
 
-  cout << "Arena " << sizeof(Arena) << endl;
-  cout << "ThreadAllocator " << sizeof(ThreadAllocator) << endl;
-  cout << "CacheBin " << sizeof(CacheBin) << endl;
   cout << "atomic " << sizeof(std::atomic<void*>) << endl;
+
+  cout << "Allocated by BaseAllocator:" << endl;
+  cout << "CacheBin " << sizeof(CacheBin) << endl;
+  cout << "ThreadAllocator " << sizeof(ThreadAllocator) << endl;
+  cout << "Arena " << sizeof(Arena) << endl;
+  cout << "RadixTree " << sizeof(RadixTree<Chunk>) << endl;
+  cout << "Chunk " << sizeof(Chunk) << endl;
 }
 
 TEST(Alignment, Alignment) {
@@ -50,11 +54,11 @@ void RangeRWTest(void *address, size_t size) {
 TEST(OSMap, OSMap) {
   constexpr size_t size = 4 * 1024 * 1024;
 
-  void *address = ChunkAllocMap(size);
+  void *address = OSAllocMap(size);
 
   RangeRWTest(address, size);
 
-  ChunkDallocMap(address, size);
+  OSDallocMap(address, size);
 }
 
 TEST(ChunkManager, ChunkManager) {

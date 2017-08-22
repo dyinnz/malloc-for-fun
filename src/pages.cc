@@ -11,7 +11,7 @@
 namespace ffmalloc {
 
 void *
-ChunkAllocMap(size_t size) {
+OSAllocMap(size_t size) {
   // TODO: tmp
   // assert(size >= kMinAllocMmap);
   assert(size % kPage == 0);
@@ -29,7 +29,7 @@ ChunkAllocMap(size_t size) {
 }
 
 void
-ChunkDallocMap(void *addr, size_t size) {
+OSDallocMap(void *addr, size_t size) {
   // assert(size >= kMinAllocMmap);
   assert(nullptr != addr);
 

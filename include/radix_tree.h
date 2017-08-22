@@ -35,18 +35,18 @@ class RadixTree {
     RadixNode **node = &root_.children[key3];
 
     if (unlikely(nullptr == *node)) {
-      RadixNode *temp_node = Static::root_alloc()->New<RadixNode>();
+      RadixNode *temp_node = Static::root_alloc()->NewPermanent<RadixNode>();
       if (!atomic_cas_simple(node, temp_node)) {
-        Static::root_alloc()->Delete(temp_node);
+        Static::root_alloc()->ReturnPermanentMemory(temp_node, sizeof(RadixNode));
       }
     }
     const uintptr_t key2 = (key >> (kLayerLogSize * 2)) & kLayerMask;
     node = &(*node)->children[key2];
 
     if (unlikely(nullptr == *node)) {
-      RadixNode *temp_node = Static::root_alloc()->New<RadixNode>();
+      RadixNode *temp_node = Static::root_alloc()->NewPermanent<RadixNode>();
       if (!atomic_cas_simple(node, temp_node)) {
-        Static::root_alloc()->Delete(temp_node);
+        Static::root_alloc()->ReturnPermanentMemory(temp_node, sizeof(RadixNode));
       }
     }
     const uintptr_t key1 = (key >> (kLayerLogSize * 1)) & kLayerMask;

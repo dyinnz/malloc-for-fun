@@ -14,7 +14,8 @@
 using namespace ffmalloc;
 
 void RunWindowTest(OperationWindow window) {
-  std::default_random_engine gen;
+  std::random_device dev;
+  std::default_random_engine gen(dev());
   std::uniform_int_distribution<size_t> dis(window.left / 8, window.right / 8);
 
   std::mt19937_64 magic;
@@ -70,6 +71,39 @@ OperationWindow GenMixClassWindow() {
   return window;
 }
 
+TEST(BaseAllocator, BaseAllocSmall) {
+  auto window = GenSmallClassWindow();
+  window.malloc = [&](size_t size) {
+    return Static::root_alloc()->Alloc(size);
+  };
+  window.free = [&](void *ptr) {
+    Static::root_alloc()->Dalloc(ptr);
+  };
+  RunWindowTest(window);
+}
+
+TEST(BaseAllocator, BaseAllocLarge) {
+  auto window = GenLargeClassWindow();
+  window.malloc = [&](size_t size) {
+    return Static::root_alloc()->Alloc(size);
+  };
+  window.free = [&](void *ptr) {
+    Static::root_alloc()->Dalloc(ptr);
+  };
+  RunWindowTest(window);
+}
+
+TEST(BaseAllocator, BaseAllocMix) {
+  auto window = GenMixClassWindow();
+  window.malloc = [&](size_t size) {
+    return Static::root_alloc()->Alloc(size);
+  };
+  window.free = [&](void *ptr) {
+    Static::root_alloc()->Dalloc(ptr);
+  };
+  RunWindowTest(window);
+}
+
 TEST(ArenaAlloc, ArenaAllocSmall) {
   auto window = GenSmallClassWindow();
   ArenaAllocator allocator;
@@ -108,6 +142,28 @@ TEST(ArenaAlloc, ArenaAllocMix) {
 
 TEST(ThreadAlloc, ThreadAllocSmall) {
   auto window = GenSmallClassWindow();
+  window.malloc = [](size_t size) {
+    return Static::thread_alloc()->ThreadAlloc(size);
+  };
+  window.free = [](void *ptr) {
+    Static::thread_alloc()->ThreadDalloc(ptr);
+  };
+  RunWindowTest(window);
+}
+
+TEST(ThreadAlloc, ThreadAllocLarge) {
+  auto window = GenLargeClassWindow();
+  window.malloc = [](size_t size) {
+    return Static::thread_alloc()->ThreadAlloc(size);
+  };
+  window.free = [](void *ptr) {
+    Static::thread_alloc()->ThreadDalloc(ptr);
+  };
+  RunWindowTest(window);
+}
+
+TEST(ThreadAlloc, ThreadAllocMix) {
+  auto window = GenMixClassWindow();
   window.malloc = [](size_t size) {
     return Static::thread_alloc()->ThreadAlloc(size);
   };

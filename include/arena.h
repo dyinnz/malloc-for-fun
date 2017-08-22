@@ -6,6 +6,7 @@
 #include "list.h"
 #include "static.h"
 #include <iostream>
+#include <mutex>
 
 namespace ffmalloc {
 
@@ -44,19 +45,23 @@ class Arena {
     assert(cs >= kPage && cs % kPage == 0);
     assert(sz_to_pind(cs) == pind);
 
+    std::lock_guard<std::mutex> guard(mutex_);
     return chunk_mgr_.AllocChunk(cs, pind, is_slab);
   }
 
   void DallocChunkWrapper(Chunk *chunk) {
+    std::lock_guard<std::mutex> guard(mutex_);
     chunk_mgr_.DallocChunk(chunk);
   }
 
  private:
+  SlabBin nonempty_slab_[kNumSmallClasses];
+  SlabBin empty_slab_[kNumSmallClasses];
+  std::mutex slab_mutex_[kNumSmallClasses];
   BaseAllocator base_alloc_;
   ChunkManager chunk_mgr_;
-  SlabBin nonempty_slab[kNumSmallClasses];
-  SlabBin empty_slab[kNumSmallClasses];
-} __attribute__((aligned (128)));
+  std::mutex mutex_;
+} CACHELINE_ALIGN;
 
 class ArenaAllocator {
  public:

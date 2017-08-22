@@ -99,6 +99,36 @@ TEST(MultiThread, C8T8) {
   }
 }
 
+TEST(MultiThread, C1T8) {
+  // TODO
+  unsigned int num_threads = 8;
+  Static::set_num_arena(1);
+  barrier barr(num_threads);
+
+  std::vector<thread> threads;
+  for (unsigned int i = 0; i < num_threads; ++i) {
+    threads.push_back(thread(ThreadTest, &barr));
+  }
+  for (size_t i = 0; i < threads.size(); ++i) {
+    threads[i].join();
+  }
+}
+
+TEST(MultiThread, C8T64) {
+  // TODO
+  unsigned int num_threads = 64;
+  Static::set_num_arena(8);
+  barrier barr(num_threads);
+
+  std::vector<thread> threads;
+  for (unsigned int i = 0; i < num_threads; ++i) {
+    threads.push_back(thread(ThreadTest, &barr));
+  }
+  for (size_t i = 0; i < threads.size(); ++i) {
+    threads[i].join();
+  }
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

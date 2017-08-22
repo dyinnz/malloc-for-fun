@@ -115,8 +115,8 @@ class ThreadAllocator {
   }
 
  private:
-  Arena &arena_;
   CacheBin *cache_bins_[kNumSmallClasses];
-};
+  Arena &arena_;
+} CACHELINE_ALIGN;
 
 } // end of namespace ffmalloc

@@ -61,7 +61,7 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, bool is_slab) {
     chunk = avail_bins[pind].pop();
 
   } else {
-    void *chunk_data = ChunkAllocMap(cs);
+    void *chunk_data = OSAllocMap(cs);
     chunk = base_alloc_.New<Chunk>(chunk_data, cs);
 
     /*
@@ -106,7 +106,7 @@ ChunkManager::DallocChunk(Chunk *chunk) {
               << std::endl;
               */
 
-    ChunkDallocMap(chunk->address(), chunk->size());
+    OSDallocMap(chunk->address(), chunk->size());
     base_alloc_.Delete(chunk);
   }
 }

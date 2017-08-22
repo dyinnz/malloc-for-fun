@@ -7,7 +7,8 @@ void *Arena::SmallAlloc(size_t cs, size_t sind) {
   assert(cs <= kMinLargeClass);
   assert(sz_to_ind(cs) == sind);
 
-  if (nonempty_slab[sind].empty()) {
+  slab_mutex_[sind].lock();
+  if (nonempty_slab_[sind].empty()) {
     const size_t slab_size = lookup_slab_size(sind);
     const size_t pind = sz_to_pind(slab_size);
     Chunk *new_slab = AllocChunkWrapper(slab_size, pind, kSlabAttr);
@@ -17,19 +18,20 @@ void *Arena::SmallAlloc(size_t cs, size_t sind) {
               __func__, cs, sind);
       return nullptr;
     }
-    nonempty_slab[sind].push(new_slab);
+    nonempty_slab_[sind].push(new_slab);
   }
 
-  Chunk *slab = nonempty_slab[sind].first();
+  Chunk *slab = nonempty_slab_[sind].first();
   Chunk::SlabBitmap &bitmap = slab->slab_bitmap();
   int index = bitmap.ffs_and_reset();
   assert(-1 != index);
   assert(index < lookup_slab_size(sind) / cs);
 
   if (!bitmap.any()) {
-    nonempty_slab[sind].erase(slab);
-    empty_slab[sind].push(slab);
+    nonempty_slab_[sind].erase(slab);
+    empty_slab_[sind].push(slab);
   }
+  slab_mutex_[sind].unlock();
 
   void *region = static_cast<char *>(slab->address()) + index * cs;
 
@@ -50,6 +52,8 @@ void Arena::SmallDalloc(void *region, Chunk *slab) {
   size_t index = (static_cast<char *>(region)
       - static_cast<char *>(slab->address())) / cs;
   Chunk::SlabBitmap &bitmap = slab->slab_bitmap();
+
+  slab_mutex_[sind].lock();
   bool is_empty = !bitmap.any();
 
   /*
@@ -62,13 +66,17 @@ void Arena::SmallDalloc(void *region, Chunk *slab) {
 
   bitmap.set(index);
   if (is_empty) {
-    empty_slab[sind].erase(slab);
-    nonempty_slab[sind].push(slab);
+    empty_slab_[sind].erase(slab);
+    nonempty_slab_[sind].push(slab);
   }
 
   if (bitmap.all()) {
-    nonempty_slab[sind].erase(slab);
+    nonempty_slab_[sind].erase(slab);
+    slab_mutex_[sind].unlock();
+
     DallocChunkWrapper(slab);
+  } else {
+    slab_mutex_[sind].unlock();
   }
 }
 
