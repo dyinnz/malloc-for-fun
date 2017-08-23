@@ -18,6 +18,7 @@ kMaxLookupSize = 4 * 1024
 kUnsignedLong = 'unsigned long'
 kUnsignedInt = 'unsigned int'
 kUnsignedShort = 'unsigned short'
+kUnsignedChar = 'unsigned char'
 
 def lcm(a, b):
     return a * b // math.gcd(a, b)
@@ -110,7 +111,7 @@ def generate_classes():
         header.write('extern %s %s[%s];\n' % (
             kUnsignedShort, 'g_slab_num', kNumSmallClasses))
         header.write('extern %s %s[%s];\n' % (
-            kUnsignedShort, 'g_index_lookup', len(index_lookup)))
+            kUnsignedChar, 'g_index_lookup', len(index_lookup)))
         header.write('\n}// end of namespace details\n')
 
         header.write('\n}// end of namespace ffmalloc\n')
@@ -129,7 +130,7 @@ def generate_classes():
             'g_slab_sizes', kNumSmallClasses, slab_sizes)
         dump_code(source, kUnsignedShort, 
             'g_slab_num', kNumSmallClasses, slab_num)
-        dump_code(source, kUnsignedShort, 
+        dump_code(source, kUnsignedChar,
             'g_index_lookup', len(index_lookup), index_lookup)
         source.write('\n}// end of namespace details\n')
         source.write('\n}// end of namespace ffmalloc\n')

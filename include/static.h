@@ -56,7 +56,9 @@ class Static {
   static size_t num_arenas_;
   static ChunkRTree *chunk_rtree_;
   static BaseAllocator *root_alloc_;
-  static thread_local ThreadAllocator *thread_alloc_;
+  static thread_local ThreadAllocator *thread_alloc_
+  __attribute__ ((tls_model("initial-exec")))
+  ;
 };
 
 } // end of namespace ffmalloc

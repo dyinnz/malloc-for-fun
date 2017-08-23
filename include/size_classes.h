@@ -17,7 +17,7 @@ extern unsigned int g_ge_page_classes[kNumGePageClasses];
 extern unsigned short g_small_classes[kNumSmallClasses];
 extern unsigned short g_slab_sizes[kNumSmallClasses];
 extern unsigned short g_slab_num[kNumSmallClasses];
-extern unsigned short g_index_lookup[512];
+extern unsigned char g_index_lookup[512];
 
 }// end of namespace details
 

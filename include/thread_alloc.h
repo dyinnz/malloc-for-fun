@@ -75,7 +75,6 @@ class ThreadAllocator {
  public:
   ThreadAllocator(Arena &arena) : arena_(arena) {
     memset(cache_bins_, 0, sizeof(CacheBin *) * kNumSmallClasses);
-    printf("%s(): thread[%p] binds arena[%p]\n", __func__, this, &arena);
   }
 
   ~ThreadAllocator() {
@@ -84,6 +83,9 @@ class ThreadAllocator {
   }
 
   void *ThreadAlloc(size_t size) {
+    if (unlikely(0 == size)) {
+      return nullptr;
+    }
     if (size <= kMaxSmallClass) {
       size_t ind = sz_to_ind(size);
       return cache_bin(ind)->PopRegion();
@@ -96,13 +98,43 @@ class ThreadAllocator {
   }
 
   void ThreadDalloc(void *ptr) {
-    Chunk *chunk = Static::chunk_rtree()->LookUp(ptr);
+    if (likely(nullptr != ptr)) {
+      Chunk *chunk = Static::chunk_rtree()->LookUp(ptr);
+      if (chunk->is_slab()) {
+        size_t ind = sz_to_ind(chunk->slab_region_size());
+        cache_bin(ind)->PushRegion(ptr);
+      } else {
+        chunk->arena()->LargeDalloc(chunk);
+      }
+    }
+  }
+
+  void *ThreadRealloc(void *old, size_t size) {
+    if (unlikely(nullptr == old)) {
+      return ThreadAlloc(size);
+    }
+    if (unlikely(0 == size)) {
+      ThreadDalloc(old);
+      return nullptr;
+    }
+    void *addr = ThreadAlloc(size);
+    if (nullptr == addr) {
+      return nullptr;
+    }
+
+    Chunk *chunk = Static::chunk_rtree()->LookUp(addr);
     if (chunk->is_slab()) {
-      size_t ind = sz_to_ind(chunk->slab_region_size());
-      return cache_bin(ind)->PushRegion(ptr);
+      size_t old_size = chunk->slab_region_size();
+      memmove(addr, old, std::min(old_size, size));
+      size_t ind = sz_to_ind(old_size);
+      cache_bin(ind)->PushRegion(old);
+
     } else {
+      size_t old_size = chunk->size();
+      memmove(addr, old, std::min(old_size, size));
       chunk->arena()->LargeDalloc(chunk);
     }
+    return addr;
   }
 
  private:

@@ -29,11 +29,15 @@ void Static::init() {
   chunk_rtree_ = &s_chunk_rtree;
   root_alloc_ = &s_root_alloc;
   num_arenas_ = std::thread::hardware_concurrency();
-
-  std::cout << "static init" << std::endl;
 }
 
 void Static::create_thread_allocator() {
+  // Ensure that all the static variables has been set correctly
+  // We can call init() twice and the values are the same.
+  if (chunk_rtree_ == nullptr) {
+    init();
+  }
+
   auto tmp_alloc = Static::root_alloc()->New<ThreadAllocator>(*next_arena());
   if (!atomic_cas_simple(&thread_alloc_, tmp_alloc)) {
     Static::root_alloc()->Delete(tmp_alloc);
@@ -42,8 +46,7 @@ void Static::create_thread_allocator() {
 
 Arena *Static::next_arena() {
   unsigned long curr = arena_index_.fetch_add(1, std::memory_order_relaxed) % num_arenas_;
-  // std::cout << __func__ << "(): " << curr << " " << num_arenas_ << std::endl;
-  printf("%s(): arena[%zu] of %zu\n", __func__, curr, num_arenas_);
+  // printf("%s(): arena[%zu] of %zu\n", __func__, curr, num_arenas_);
   if (nullptr == arenas_[curr]) {
     auto tmp_arena = Static::root_alloc()->New<Arena>();
     if (!atomic_cas_simple(&arenas_[curr], tmp_arena)) {
