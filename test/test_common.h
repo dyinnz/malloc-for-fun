@@ -5,6 +5,7 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 
 struct MemoryRecord {
   uint64_t *ptr;
