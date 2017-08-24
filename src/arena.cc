@@ -11,8 +11,7 @@ void *Arena::SmallAlloc(size_t cs, size_t sind) {
   if (nonempty_slab_[sind].empty()) {
     const size_t slab_size = lookup_slab_size(sind);
     const size_t pind = sz_to_pind(slab_size);
-    Chunk *new_slab = AllocChunkWrapper(slab_size, pind, kSlabAttr);
-    new_slab->set_slab_region_size(cs);
+    Chunk *new_slab = AllocChunkWrapper(slab_size, pind, cs);
     if (nullptr == new_slab) {
       fprintf(stderr, "%s(): ArenaAlloc slab failed: cs %zu, sind %zu\n",
               __func__, cs, sind);
@@ -35,14 +34,6 @@ void *Arena::SmallAlloc(size_t cs, size_t sind) {
 
   void *region = slab->char_addr() + index * cs;
 
-  /*
-  std::cout << __func__ << "():"
-            << " cs " << cs
-            << " sind " << sind
-          << " region " << region
-            << std::endl;
-            */
-
   return region;
 }
 
@@ -55,14 +46,6 @@ void Arena::SmallDalloc(void *region, Chunk *slab) {
 
   slab_mutex_[sind].lock();
   bool is_empty = !bitmap.any();
-
-  /*
-  std::cout << __func__ << "():"
-            << " cs " << cs
-            << " sind " << sind
-            << " ptr " << region
-            << std::endl;
-            */
 
   bitmap.set(index);
   if (is_empty) {

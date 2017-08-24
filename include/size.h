@@ -87,6 +87,10 @@ inline size_t pind_to_ind(size_t pind) {
   return pind + (kNumSizeClasses - kNumGePageClasses);
 }
 
+inline size_t pind_to_cs(size_t pind) {
+  return ind_to_cs(pind_to_ind(pind));
+}
+
 inline size_t lookup_slab_size(size_t sind) {
   return details::g_slab_sizes[sind];
 }

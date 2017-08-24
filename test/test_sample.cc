@@ -125,7 +125,7 @@ TEST(RadixTree, RadixTree) {
   EXPECT_EQ(chunk, radix_tree.LookUp(k1));
 
   radix_tree.Delete(k1);
-  ASSERT_EQ(radix_tree.LookUp(k1), nullptr);
+  EXPECT_EQ(radix_tree.LookUp(k1), nullptr);
 
 }
 
@@ -135,12 +135,12 @@ TEST(RadixTree, ChunkRegister) {
   ChunkManager mgr(arena, base_alloc);
 
   constexpr size_t large_size = 4 * kPage;
-  Chunk *chunk = mgr.AllocChunk(large_size, sz_to_pind(large_size), false);
+  Chunk *chunk = mgr.AllocChunk(large_size, sz_to_pind(large_size), 0);
 
   char *ptr = chunk->char_addr();
   EXPECT_EQ(chunk, Static::chunk_rtree()->LookUp(ptr));
-  ASSERT_EQ(Static::chunk_rtree()->LookUp(ptr + kPage), nullptr);
-  ASSERT_EQ(Static::chunk_rtree()->LookUp(ptr + 2 * kPage), nullptr);
+  EXPECT_EQ(Static::chunk_rtree()->LookUp(ptr + kPage), nullptr);
+  EXPECT_EQ(Static::chunk_rtree()->LookUp(ptr + 2 * kPage), nullptr);
   EXPECT_EQ(chunk, Static::chunk_rtree()->LookUp(ptr + 3 * kPage));
 
   mgr.DallocChunk(chunk);

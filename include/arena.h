@@ -41,12 +41,12 @@ class Arena {
   }
 
  private:
-  Chunk *AllocChunkWrapper(size_t cs, size_t pind, bool is_slab) {
+  Chunk *AllocChunkWrapper(size_t cs, size_t pind, size_t region_size) {
     assert(cs >= kPage && cs % kPage == 0);
     assert(sz_to_pind(cs) == pind);
 
     std::lock_guard<std::mutex> guard(mutex_);
-    return chunk_mgr_.AllocChunk(cs, pind, is_slab);
+    return chunk_mgr_.AllocChunk(cs, pind, region_size);
   }
 
   void DallocChunkWrapper(Chunk *chunk) {

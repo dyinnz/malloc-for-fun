@@ -34,7 +34,7 @@ OSDallocMap(void *addr, size_t size) {
   assert(nullptr != addr);
 
   if (-1 == munmap(addr, size)) {
-    fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+    fprintf(stderr, "munmap() failed: %s size: %zu\n", strerror(errno), size);
   }
 }
 

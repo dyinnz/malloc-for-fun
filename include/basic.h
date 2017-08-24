@@ -10,8 +10,7 @@ constexpr size_t kCacheLine = 64;
 constexpr size_t kPage = 4 * 1024; // 4K
 constexpr size_t kMinAllocMmap = 2 * 1024 * 1024; // 2M
 constexpr size_t kStandardChunk = kMinAllocMmap;
-constexpr bool kSlabAttr = true;
-constexpr bool kNonSlabAttr = false;
+constexpr uint16_t kNonSlabAttr = 0;
 
 /*
 inline size_t alignment_ceil(size_t size, size_t alignment) {

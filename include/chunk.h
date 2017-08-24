@@ -97,8 +97,8 @@ typedef List<Chunk> ChunkList;
 
 class ChunkManager {
  private:
-  // TODO:
-  static constexpr int kMaxBinSize = 2;
+// TODO:
+  static constexpr int kMaxBinSize = 20;
 
  public:
   explicit ChunkManager(Arena &arena, BaseAllocator &base_alloc)
@@ -110,6 +110,10 @@ class ChunkManager {
   void DallocChunk(Chunk *chunk);
 
  private:
+  Chunk* OSMapChunk(size_t cs, size_t slab_region_size);
+  void OSUnmapChunk(Chunk *chunk);
+
+  Chunk *SplitChunk(Chunk *curr, size_t head_size);
 
  private:
   Arena &arena_;
