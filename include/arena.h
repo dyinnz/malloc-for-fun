@@ -80,7 +80,7 @@ class ArenaAllocator {
   void ArenaDalloc(void *ptr) {
     Chunk *chunk = Static::chunk_rtree()->LookUp(ptr);
     {
-      char *addr = static_cast<char *>(chunk->address());
+      char *addr = chunk->char_addr();
       assert(addr <= ptr && ptr < addr + chunk->size());
     }
     if (chunk->is_slab()) {

@@ -79,14 +79,17 @@ class RadixTree {
 
     const uintptr_t key3 = (key >> (kLayerLogSize * 3)) & kLayerMask;
     RadixNode *node = root_.children[key3];
-    assert(nullptr != node);
+    if (nullptr == node) {
+      return nullptr;
+    }
 
     const uintptr_t key2 = (key >> (kLayerLogSize * 2)) & kLayerMask;
     node = node->children[key2];
-    assert(nullptr != node);
+    if (nullptr == node) {
+      return nullptr;
+    }
 
     const uintptr_t key1 = (key >> (kLayerLogSize * 1)) & kLayerMask;
-    assert(nullptr != node->children[key1]);
 
     // std::cout << __func__ << "(): " << addr << " elem: " << node->elements[key1] << std::endl;
     return node->elements[key1];

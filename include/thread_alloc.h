@@ -78,8 +78,11 @@ class ThreadAllocator {
   }
 
   ~ThreadAllocator() {
-    // TODO:
-    // use pthread tls
+    for (auto &bin : cache_bins_) {
+      if (nullptr != bin) {
+        arena_.base_alloc().Delete(bin);
+      }
+    }
   }
 
   void *ThreadAlloc(size_t size) {
@@ -122,7 +125,7 @@ class ThreadAllocator {
       return nullptr;
     }
 
-    Chunk *chunk = Static::chunk_rtree()->LookUp(addr);
+    Chunk *chunk = Static::chunk_rtree()->LookUp(old);
     if (chunk->is_slab()) {
       size_t old_size = chunk->slab_region_size();
       memmove(addr, old, std::min(old_size, size));

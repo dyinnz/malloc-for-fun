@@ -15,20 +15,25 @@ class Arena;
 class Chunk : public ListNode<Chunk> {
  public:
   typedef Bitmap<kMaxSlabRegions> SlabBitmap;
+  enum class State : uint8_t { kActive, kDirty, kClean };
 
-  Chunk(void *address, size_t size) :
-      address_(address), size_(size) {
+  Chunk(void *address, size_t size, Arena *arena, State state, size_t region_size)
+      : address_(address),
+        size_(size),
+        arena_(arena),
+        state_(state),
+        slab_region_size_(static_cast<uint16_t>(region_size)),
+        slab_bitmap_() {
+    if (is_slab()) {
+      slab_bitmap().init(size_ / slab_region_size_);
+    }
   }
 
-  Chunk() : Chunk(nullptr, 0) {
+  Chunk() : Chunk(nullptr, 0, nullptr, State::kClean, 0) {
   }
 
   Arena *arena() {
     return arena_;
-  }
-
-  void set_arena(Arena *arena) {
-    arena_ = arena;
   }
 
   void *address() const {
@@ -37,6 +42,10 @@ class Chunk : public ListNode<Chunk> {
 
   void set_address(void *address) {
     address_ = address;
+  }
+
+  char *char_addr() const {
+    return static_cast<char *>(address_);
   }
 
   size_t size() const {
@@ -48,11 +57,7 @@ class Chunk : public ListNode<Chunk> {
   }
 
   bool is_slab() const {
-    return is_slab_;
-  }
-
-  void set_slab(bool is_slab) {
-    is_slab_ = is_slab;
+    return 0 != slab_region_size();
   }
 
   size_t slab_region_size() const {
@@ -60,16 +65,18 @@ class Chunk : public ListNode<Chunk> {
   }
 
   void set_slab_region_size(size_t region_size) {
-    slab_region_size_ = region_size;
-    slab_bitmap().init(size_ / slab_region_size_);
+    slab_region_size_ = static_cast<uint16_t>(region_size);
+    if (is_slab()) {
+      slab_bitmap().init(size_ / slab_region_size_);
+    }
   }
 
-  bool has_data() const {
-    return address_ != nullptr;
+  State state() const {
+    return state_;
   }
 
-  void reset() {
-    memset(this, 0, sizeof(*this));
+  void set_state(State state) {
+    state_ = state;
   }
 
   SlabBitmap &slab_bitmap() {
@@ -79,10 +86,10 @@ class Chunk : public ListNode<Chunk> {
  private:
   void *address_{nullptr};
   size_t size_{0};
-  Arena *arena_{nullptr};
+  Arena *arena_;
+  State state_{State::kDirty};
+  uint16_t slab_region_size_{0};
   SlabBitmap slab_bitmap_;
-  bool is_slab_{kNonSlabAttr};
-  size_t slab_region_size_{0};
 };
 
 typedef List<Chunk> ChunkList;
@@ -98,7 +105,7 @@ class ChunkManager {
       : arena_(arena), base_alloc_(base_alloc) {
   }
 
-  Chunk *AllocChunk(size_t cs, size_t pind, bool is_slab);
+  Chunk *AllocChunk(size_t cs, size_t pind, size_t slab_region_size);
 
   void DallocChunk(Chunk *chunk);
 

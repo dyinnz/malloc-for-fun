@@ -86,7 +86,7 @@ TEST(List, ChunkList) {
   BaseAllocator base_alloc;
 
   for (int i = 0; i < count; ++i) {
-    Chunk *chunk = base_alloc.New<Chunk>(nullptr, i);
+    Chunk *chunk = base_alloc.New<Chunk>(nullptr, i, nullptr, Chunk::State::kDirty, 0);
     chunk_list.push(chunk);
   }
 
@@ -100,9 +100,9 @@ TEST(List, ChunkList) {
     num -= 1;
   }
 
-  Chunk *x = base_alloc.New<Chunk>(nullptr, 111);
-  Chunk *y = base_alloc.New<Chunk>(nullptr, 222);
-  Chunk *z = base_alloc.New<Chunk>(nullptr, 333);
+  Chunk *x = base_alloc.New<Chunk>(nullptr, 111, nullptr, Chunk::State::kDirty, 0);
+  Chunk *y = base_alloc.New<Chunk>(nullptr, 222, nullptr, Chunk::State::kDirty, 0);
+  Chunk *z = base_alloc.New<Chunk>(nullptr, 333, nullptr, Chunk::State::kDirty, 0);
   chunk_list.push(x);
   chunk_list.push(y);
   chunk_list.push(z);
@@ -125,7 +125,7 @@ TEST(RadixTree, RadixTree) {
   EXPECT_EQ(chunk, radix_tree.LookUp(k1));
 
   radix_tree.Delete(k1);
-  ASSERT_DEATH({ radix_tree.LookUp(k1); }, "");
+  ASSERT_EQ(radix_tree.LookUp(k1), nullptr);
 
 }
 
@@ -137,10 +137,10 @@ TEST(RadixTree, ChunkRegister) {
   constexpr size_t large_size = 4 * kPage;
   Chunk *chunk = mgr.AllocChunk(large_size, sz_to_pind(large_size), false);
 
-  char *ptr = static_cast<char *>(chunk->address());
+  char *ptr = chunk->char_addr();
   EXPECT_EQ(chunk, Static::chunk_rtree()->LookUp(ptr));
-  ASSERT_DEATH({ Static::chunk_rtree()->LookUp(ptr + kPage); }, "");
-  ASSERT_DEATH({ Static::chunk_rtree()->LookUp(ptr + 2 * kPage); }, "");
+  ASSERT_EQ(Static::chunk_rtree()->LookUp(ptr + kPage), nullptr);
+  ASSERT_EQ(Static::chunk_rtree()->LookUp(ptr + 2 * kPage), nullptr);
   EXPECT_EQ(chunk, Static::chunk_rtree()->LookUp(ptr + 3 * kPage));
 
   mgr.DallocChunk(chunk);

@@ -2,13 +2,11 @@
 #include <cassert>
 
 #include "chunk.h"
-#include "pages.h"
-#include "static.h"
 
 namespace ffmalloc {
 
 static void RegisterRadix(Chunk *chunk) {
-  char *head = static_cast<char *>(chunk->address());
+  char *head = chunk->char_addr();
   char *tail = head + chunk->size() - kPage;
   // first page
   Static::chunk_rtree()->Insert(head, chunk);
@@ -29,7 +27,7 @@ static void RegisterRadix(Chunk *chunk) {
 }
 
 static void DeregisterRadix(Chunk *chunk) {
-  char *head = static_cast<char *>(chunk->address());
+  char *head = chunk->char_addr();
   char *tail = head + chunk->size() - kPage;
   // first page
   Static::chunk_rtree()->Delete(head);
@@ -50,26 +48,18 @@ static void DeregisterRadix(Chunk *chunk) {
 }
 
 Chunk *
-ChunkManager::AllocChunk(size_t cs, size_t pind, bool is_slab) {
+ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
   assert(cs == sz_to_cs(cs));
   assert(pind == sz_to_pind(cs));
 
   Chunk *chunk = nullptr;
   if (pind < kNumGePageClasses && !avail_bins[pind].empty()) {
-    // std::cout << "bin pind: " << pind << " pop." << std::endl;
 
     chunk = avail_bins[pind].pop();
 
   } else {
     void *chunk_data = OSAllocMap(cs);
-    chunk = base_alloc_.New<Chunk>(chunk_data, cs);
-
-    /*
-    std::cout << "map chunk: " << chunk
-              << " cs: " << cs
-              << " pind: " << pind
-              << std::endl;
-              */
+    chunk = base_alloc_.New<Chunk>(chunk_data, cs, &arena_, Chunk::State::kDirty, slab_region_size);
 
     if (nullptr == chunk) {
       fprintf(stderr, "%s() ArenaAlloc from map failed: size %zu\n", __func__, cs);
@@ -77,10 +67,13 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, bool is_slab) {
     }
   }
 
-  assert(chunk);
+  assert(nullptr != chunk);
+  assert(Chunk::State::kDirty == chunk->state());
+  assert(&arena_ == chunk->arena());
+  assert(chunk->size() == sz_to_cs(chunk->size()));
 
-  chunk->set_slab(is_slab);
-  chunk->set_arena(&arena_);
+  chunk->set_slab_region_size(slab_region_size);
+  chunk->set_state(Chunk::State::kActive);
   RegisterRadix(chunk);
 
   return chunk;
@@ -88,23 +81,20 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, bool is_slab) {
 
 void
 ChunkManager::DallocChunk(Chunk *chunk) {
+  assert(nullptr != chunk);
+  assert(Chunk::State::kActive == chunk->state());
+  assert(&arena_ == chunk->arena());
+  assert(chunk->size() == sz_to_cs(chunk->size()));
+
   size_t pind = sz_to_pind(chunk->size());
 
+  chunk->set_state(Chunk::State::kDirty);
   DeregisterRadix(chunk);
 
   if (pind < kNumGePageClasses && avail_bins[pind].size() < kMaxBinSize) {
-    // std::cout << "bin pind: " << pind << " push: " << chunk << std::endl;
-
     avail_bins[pind].push(chunk);
-  } else {
 
-    /*
-    std::cout << "unmap chunk: " << chunk
-              << " addr: " << chunk->address()
-              << " cs: " << chunk->size()
-              << " pind: " << pind
-              << std::endl;
-              */
+  } else {
 
     OSDallocMap(chunk->address(), chunk->size());
     base_alloc_.Delete(chunk);

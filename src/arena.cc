@@ -33,7 +33,7 @@ void *Arena::SmallAlloc(size_t cs, size_t sind) {
   }
   slab_mutex_[sind].unlock();
 
-  void *region = static_cast<char *>(slab->address()) + index * cs;
+  void *region = slab->char_addr() + index * cs;
 
   /*
   std::cout << __func__ << "():"
@@ -50,7 +50,7 @@ void Arena::SmallDalloc(void *region, Chunk *slab) {
   size_t cs = slab->slab_region_size();
   size_t sind = sz_to_ind(cs);
   size_t index = (static_cast<char *>(region)
-      - static_cast<char *>(slab->address())) / cs;
+      - slab->char_addr()) / cs;
   Chunk::SlabBitmap &bitmap = slab->slab_bitmap();
 
   slab_mutex_[sind].lock();
