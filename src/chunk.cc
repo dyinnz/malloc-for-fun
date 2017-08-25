@@ -52,6 +52,14 @@ get_fit_pind(Chunk *chunk) {
   return sz_to_pind(chunk->size() + 1) - 1;
 }
 
+ChunkManager::~ChunkManager() {
+  for (auto &chunks: avail_bins_) {
+    while (!chunks.empty()) {
+      OSUnmapChunk(chunks.pop());
+    }
+  }
+}
+
 Chunk *
 ChunkManager::OSMapChunk(size_t cs, size_t slab_region_size) {
   void *chunk_data = OSAllocMap(cs);
@@ -93,6 +101,21 @@ ChunkManager::SplitChunk(Chunk *curr, size_t head_size) {
 }
 
 Chunk *
+ChunkManager::MergeChunk(Chunk *head, Chunk *tail) {
+  assert(head->char_addr() + head->size() == tail->char_addr());
+  assert(head->arena() == tail->arena());
+
+  DeregisterRtree(head);
+  DeregisterRtree(tail);
+
+  head->set_size(head->size() + tail->size());
+  base_alloc_.Delete(tail);
+
+  RegisterRtree(head);
+  return head;
+}
+
+Chunk *
 ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
   assert(cs == sz_to_cs(cs));
   assert(pind == sz_to_pind(cs));
@@ -100,15 +123,15 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
   Chunk *chunk = nullptr;
 
   /*
-  if (pind < kNumGePageClasses && !avail_bins[pind].empty()) {
-    chunk = avail_bins[pind].pop();
+  if (pind < kNumGePageClasses && !avail_bins_[pind].empty()) {
+    chunk = avail_bins_[pind].pop();
     */
 
   if (pind < kNumGePageClasses) {
     // first fit
     for (size_t i = pind; i < kNumGePageClasses; ++i) {
-      if (!avail_bins[i].empty()) {
-        chunk = avail_bins[i].pop();
+      if (!avail_bins_[i].empty()) {
+        chunk = avail_bins_[i].pop();
         break;
       }
     }
@@ -123,7 +146,7 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
     // split if gets a larger chunk
     if (chunk->size() > cs) {
       Chunk *tail = SplitChunk(chunk, cs);
-      avail_bins[get_fit_pind(tail)].push(tail);
+      avail_bins_[get_fit_pind(tail)].push(tail);
     }
 
   } else {
@@ -160,8 +183,30 @@ ChunkManager::DallocChunk(Chunk *chunk) {
     DeregisterRtreeInterior(chunk);
   }
 
-  if (pind < kNumGePageClasses && avail_bins[pind].size() < kMaxBinSize) {
-    avail_bins[pind].push(chunk);
+  /*
+  if (pind < kNumGePageClasses && avail_bins_[pind].size() < kMaxBinSize) {
+    avail_bins_[pind].push(chunk);
+    */
+
+  if (pind < kNumGePageClasses) {
+    Chunk *prev = Static::chunk_rtree()->LookUp(chunk->char_addr() - kPage);
+    if (nullptr != prev && prev->arena() == chunk->arena() && Chunk::State::kDirty == prev->state()) {
+      avail_bins_[get_fit_pind(prev)].erase(prev);
+      chunk = MergeChunk(prev, chunk);
+    }
+
+    Chunk *next = Static::chunk_rtree()->LookUp(chunk->char_addr() + chunk->size());
+    if (nullptr != next && next->arena() == chunk->arena() && Chunk::State::kDirty == next->state()) {
+      avail_bins_[get_fit_pind(next)].erase(next);
+      chunk = MergeChunk(chunk, next);
+    }
+
+    size_t new_pind = get_fit_pind(chunk);
+    if (new_pind < kNumGePageClasses) {
+      avail_bins_[new_pind].push(chunk);
+    } else {
+      OSUnmapChunk(chunk);
+    }
 
   } else {
     OSUnmapChunk(chunk);

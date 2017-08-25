@@ -65,8 +65,8 @@ inline size_t sz_to_ind(size_t size) {
 inline size_t sz_to_pind(size_t size) {
   assert(size >= kPage);
 
-  if (size >= kMinAllocMmap) {
-    return kNumGePageClasses + 1;
+  if (size > kMinAllocMmap) {
+    return kNumGePageClasses;
 
   } else {
     const int msb = 63 - __builtin_clzl(2 * size - 1) - 1;

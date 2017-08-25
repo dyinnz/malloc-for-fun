@@ -54,6 +54,7 @@ class RadixTree {
   }
 
   void Delete(void *addr) {
+    // std::cout << __func__ << "(): " << addr << std::endl;
     const uintptr_t key = reinterpret_cast<uintptr_t>(addr);
 
     const uintptr_t key3 = (key >> (kLayerLogSize * 3)) & kLayerMask;
@@ -66,8 +67,6 @@ class RadixTree {
 
     const uintptr_t key1 = (key >> (kLayerLogSize * 1)) & kLayerMask;
     assert(nullptr != node->elements[key1]);
-
-    // std::cout << __func__ << "(): " << addr << " elem: " << node->elements[key1] << std::endl;
 
     node->elements[key1] = nullptr;
   }

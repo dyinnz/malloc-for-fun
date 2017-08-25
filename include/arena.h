@@ -19,6 +19,20 @@ class Arena {
       : chunk_mgr_(*this, base_alloc_) {
   }
 
+  ~Arena() {
+    for (auto &slabs : nonempty_slab_) {
+      while (!slabs.empty()) {
+        // TODO: should warning here
+        DallocChunkWrapper(slabs.pop());
+      }
+    }
+    for (auto &slabs : empty_slab_) {
+      while (!slabs.empty()) {
+        DallocChunkWrapper(slabs.pop());
+      }
+    }
+  }
+
   void *SmallAlloc(size_t cs, size_t sind);
   void SmallDalloc(void *region, Chunk *slab);
 

@@ -101,9 +101,11 @@ class ChunkManager {
   static constexpr int kMaxBinSize = 20;
 
  public:
-  explicit ChunkManager(Arena &arena, BaseAllocator &base_alloc)
+  ChunkManager(Arena &arena, BaseAllocator &base_alloc)
       : arena_(arena), base_alloc_(base_alloc) {
   }
+
+  ~ChunkManager();
 
   Chunk *AllocChunk(size_t cs, size_t pind, size_t slab_region_size);
 
@@ -114,11 +116,12 @@ class ChunkManager {
   void OSUnmapChunk(Chunk *chunk);
 
   Chunk *SplitChunk(Chunk *curr, size_t head_size);
+  Chunk *MergeChunk(Chunk *head, Chunk *tail);
 
  private:
   Arena &arena_;
   BaseAllocator &base_alloc_;
-  ChunkList avail_bins[kNumGePageClasses];
+  ChunkList avail_bins_[kNumGePageClasses];
 };
 
 } // end of namespace ffmalloc
