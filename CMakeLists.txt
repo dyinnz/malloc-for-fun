@@ -26,6 +26,7 @@ add_library(ff_core.o OBJECT
         include/size_classes.h
         include/static.h
         include/thread_alloc.h
+        include/simplelogger.h
         src/arena.cc
         src/base_alloc.cc
         src/chunk.cc

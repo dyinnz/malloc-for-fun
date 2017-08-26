@@ -4,14 +4,16 @@
 #include "basic.h"
 #include "pages.h"
 #include "chunk.h"
+#include "simplelogger.h"
+
+simplelogger::Logger logger(simplelogger::kDebug);
 
 int main() {
 
   using namespace std;
   using namespace ffmalloc;
 
-  cout << "hello world" << endl;
+  logger.log("chunk size: {}", sizeof(Chunk));
 
-  cout << "Chunk size: " << sizeof(Chunk) << endl;
   return 0;
 }
