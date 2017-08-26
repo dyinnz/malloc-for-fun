@@ -2,6 +2,7 @@
 #include <cassert>
 
 #include "chunk.h"
+#include "simplelogger.h"
 
 namespace ffmalloc {
 
@@ -67,10 +68,13 @@ ChunkManager::OSMapChunk(size_t cs, size_t slab_region_size) {
     Chunk *chunk = base_alloc_.New<Chunk>(chunk_data, cs, &arena_, Chunk::State::kDirty, slab_region_size);
     if (nullptr == chunk) {
       fprintf(stderr, "%s() alloc chunk meta failed\n", __func__);
+      OSDallocMap(chunk_data, cs);
       return nullptr;
 
     } else {
       RegisterRtree(chunk);
+      meta_ += sizeof(Chunk);
+      hold_ += chunk->size();
       return chunk;
     }
   }
@@ -81,20 +85,27 @@ void
 ChunkManager::OSUnmapChunk(Chunk *chunk) {
   DeregisterRtree(chunk);
   OSDallocMap(chunk->address(), chunk->size());
+  hold_ -= chunk->size();
+
+  base_alloc_.Delete(chunk);
+  meta_ -=  sizeof(Chunk);
 }
 
 Chunk *
 ChunkManager::SplitChunk(Chunk *curr, size_t head_size) {
   assert(head_size < curr->size());
-  DeregisterRtree(curr);
-
   Chunk *tail = base_alloc_.New<Chunk>(curr->char_addr() + head_size,
                                        curr->size() - head_size,
                                        &arena_,
                                        curr->state(),
                                        kNonSlabAttr);
-  curr->set_size(head_size);
+  if (nullptr == tail) {
+    return nullptr;
+  }
+  meta_ += sizeof(Chunk);
 
+  DeregisterRtree(curr);
+  curr->set_size(head_size);
   RegisterRtree(curr);
   RegisterRtree(tail);
   return tail;
@@ -107,11 +118,12 @@ ChunkManager::MergeChunk(Chunk *head, Chunk *tail) {
 
   DeregisterRtree(head);
   DeregisterRtree(tail);
-
   head->set_size(head->size() + tail->size());
-  base_alloc_.Delete(tail);
-
   RegisterRtree(head);
+
+  base_alloc_.Delete(tail);
+  meta_ -= sizeof(Chunk);
+
   return head;
 }
 
@@ -166,6 +178,8 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
     RegisterRtreeInterior(chunk);
   }
 
+  request_ += chunk->size();
+
   return chunk;
 }
 
@@ -175,6 +189,8 @@ ChunkManager::DallocChunk(Chunk *chunk) {
   assert(Chunk::State::kActive == chunk->state());
   assert(&arena_ == chunk->arena());
   assert(chunk->size() == sz_to_cs(chunk->size()));
+
+  request_ -= chunk->size();
 
   size_t pind = sz_to_pind(chunk->size());
 

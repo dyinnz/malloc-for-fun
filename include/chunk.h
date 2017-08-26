@@ -122,6 +122,11 @@ class ChunkManager {
   Arena &arena_;
   BaseAllocator &base_alloc_;
   ChunkList avail_bins_[kNumGePageClasses];
+
+  size_t hold_ {0};
+  size_t request_ {0};
+  size_t meta_ {sizeof(ChunkManager)};
+  size_t clean_ {0};
 };
 
 } // end of namespace ffmalloc
