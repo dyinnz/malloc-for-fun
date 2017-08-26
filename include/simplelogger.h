@@ -35,14 +35,14 @@ namespace simplelogger {
  * log level
  */
 enum Level {
-  kDebug     = 0,
-  kLog       = 1,
-  kNotice    = 2,
-  kError     = 3,
+  kDebug = 0,
+  kLog = 1,
+  kNotice = 2,
+  kError = 3,
   kSilence,
 };
 
-constexpr int kMaxLevel {5};
+constexpr int kMaxLevel{5};
 
 /**
  * auxiliary function
@@ -59,7 +59,7 @@ void parse_format(std::ostringstream &ss, const char *format, const T &v, A... a
  * logger for single thread
  */
 class Logger {
-public:
+ public:
   Logger(Level level = kLog) : _log_level(level) {
     for (int l = 0; l < kMaxLevel; ++l) {
       _fp[l] = stdout;
@@ -78,29 +78,34 @@ public:
     }
   }
 
-  template<typename ...A> void debug  (A... args) {
+  template<typename ...A>
+  void debug(A... args) {
 #ifdef DEBUG
-    print_wrapper (kDebug, args...);
+    print_wrapper(kDebug, args...);
 #endif
   }
 
-  template<typename ...A> void log    (A... args) {
-    print_wrapper (kLog, args...);
+  template<typename ...A>
+  void log(A... args) {
+    print_wrapper(kLog, args...);
   }
-  template<typename ...A> void notice (A... args) {
-    print_wrapper (kNotice, args...);
+  template<typename ...A>
+  void notice(A... args) {
+    print_wrapper(kNotice, args...);
   }
-  template<typename ...A> void error  (A... args) {
-    print_wrapper (kError, args...);
+  template<typename ...A>
+  void error(A... args) {
+    print_wrapper(kError, args...);
   }
 
-private:
-  template<typename ...A> void print_wrapper(Level level, A... args);
+ private:
+  template<typename ...A>
+  void print_wrapper(Level level, A... args);
 
-  Level _log_level { kError };
+  Level _log_level{kError};
   FILE *_fp[kMaxLevel];
 
-  const char *kTag[kMaxLevel] {
+  const char *kTag[kMaxLevel]{
       "[DEBUG]  ",
       "[LOG]    ",
       "[NOTICE] ",
@@ -115,20 +120,20 @@ private:
 
 template<typename T, typename ...A>
 void parse_format(std::ostringstream &ss,
-                  const char        *format,
-                  const T           &v,
+                  const char *format,
+                  const T &v,
                   A...              args) {
 
   assert(format);
-  const char *p { format };
+  const char *p{format};
 
   while (*p) {
     switch (*p) {
 
       case '{':
-        if ('}' == *(p+1)) {
+        if ('}' == *(p + 1)) {
           ss << v;
-          parse_format(ss, p+2, args...);
+          parse_format(ss, p + 2, args...);
           return;
 
         } else {
@@ -138,14 +143,13 @@ void parse_format(std::ostringstream &ss,
         break;
 
       case '%':
-        if ('\0' != *(p+1)) {
-          ss << *(p+1);
+        if ('\0' != *(p + 1)) {
+          ss << *(p + 1);
           p += 2;
         }
         break;
 
-      default:
-        ss << *p;
+      default:ss << *p;
         p += 1;
         break;
     }
@@ -153,8 +157,6 @@ void parse_format(std::ostringstream &ss,
 }
 
 /*----------------------------------------------------------------------------*/
-
-
 
 template<typename ...A>
 void Logger::print_wrapper(Level level, A... args) {

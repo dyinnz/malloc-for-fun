@@ -73,8 +73,8 @@ ChunkManager::OSMapChunk(size_t cs, size_t slab_region_size) {
 
     } else {
       RegisterRtree(chunk);
-      meta_ += sizeof(Chunk);
-      hold_ += chunk->size();
+      stat_.meta += sizeof(Chunk);
+      stat_.hold += chunk->size();
       return chunk;
     }
   }
@@ -85,10 +85,10 @@ void
 ChunkManager::OSUnmapChunk(Chunk *chunk) {
   DeregisterRtree(chunk);
   OSDallocMap(chunk->address(), chunk->size());
-  hold_ -= chunk->size();
+  stat_.hold -= chunk->size();
 
   base_alloc_.Delete(chunk);
-  meta_ -=  sizeof(Chunk);
+  stat_.meta -=  sizeof(Chunk);
 }
 
 Chunk *
@@ -102,7 +102,7 @@ ChunkManager::SplitChunk(Chunk *curr, size_t head_size) {
   if (nullptr == tail) {
     return nullptr;
   }
-  meta_ += sizeof(Chunk);
+  stat_.meta += sizeof(Chunk);
 
   DeregisterRtree(curr);
   curr->set_size(head_size);
@@ -122,7 +122,7 @@ ChunkManager::MergeChunk(Chunk *head, Chunk *tail) {
   RegisterRtree(head);
 
   base_alloc_.Delete(tail);
-  meta_ -= sizeof(Chunk);
+  stat_.meta -= sizeof(Chunk);
 
   return head;
 }
@@ -178,7 +178,7 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
     RegisterRtreeInterior(chunk);
   }
 
-  request_ += chunk->size();
+  stat_.request += chunk->size();
 
   return chunk;
 }
@@ -190,7 +190,7 @@ ChunkManager::DallocChunk(Chunk *chunk) {
   assert(&arena_ == chunk->arena());
   assert(chunk->size() == sz_to_cs(chunk->size()));
 
-  request_ -= chunk->size();
+  stat_.request -= chunk->size();
 
   size_t pind = sz_to_pind(chunk->size());
 

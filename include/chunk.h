@@ -32,6 +32,11 @@ class Chunk : public ListNode<Chunk> {
   Chunk() : Chunk(nullptr, 0, nullptr, State::kClean, 0) {
   }
 
+  Chunk(const Chunk&) = delete;
+  Chunk(Chunk&&) = delete;
+  Chunk& operator=(const Chunk&) = delete;
+  Chunk& operator=(Chunk&&) = delete;
+
   Arena *arena() {
     return arena_;
   }
@@ -101,9 +106,21 @@ class ChunkManager {
   static constexpr int kMaxBinSize = 20;
 
  public:
+  struct Stat {
+    size_t hold {0};
+    size_t request {0};
+    size_t meta {0};
+    size_t clean {0};
+  };
+
   ChunkManager(Arena &arena, BaseAllocator &base_alloc)
-      : arena_(arena), base_alloc_(base_alloc) {
+      : arena_(arena), base_alloc_(base_alloc), stat_() {
   }
+
+  ChunkManager(const ChunkManager&) = delete;
+  ChunkManager(ChunkManager&&) = delete;
+  ChunkManager& operator=(const ChunkManager&) = delete;
+  ChunkManager& operator=(ChunkManager&&) = delete;
 
   ~ChunkManager();
 
@@ -111,8 +128,12 @@ class ChunkManager {
 
   void DallocChunk(Chunk *chunk);
 
+  const Stat& stat() const {
+    return stat_;
+  }
+
  private:
-  Chunk* OSMapChunk(size_t cs, size_t slab_region_size);
+  Chunk *OSMapChunk(size_t cs, size_t slab_region_size);
   void OSUnmapChunk(Chunk *chunk);
 
   Chunk *SplitChunk(Chunk *curr, size_t head_size);
@@ -123,10 +144,7 @@ class ChunkManager {
   BaseAllocator &base_alloc_;
   ChunkList avail_bins_[kNumGePageClasses];
 
-  size_t hold_ {0};
-  size_t request_ {0};
-  size_t meta_ {sizeof(ChunkManager)};
-  size_t clean_ {0};
+  Stat stat_;
 };
 
 } // end of namespace ffmalloc

@@ -19,6 +19,8 @@ add_library(ff_core.o OBJECT
         include/basic.h
         include/bitmap.h
         include/chunk.h
+        include/ffhelper.h
+        include/ffmalloc.h
         include/list.h
         include/pages.h
         include/radix_tree.h
@@ -31,11 +33,10 @@ add_library(ff_core.o OBJECT
         src/base_alloc.cc
         src/chunk.cc
         src/size_classes.cc
+        src/ffhelper.cc
+        src/ffmalloc.cc
         src/pages.cc
-        src/static.cc)
-
-add_library(ff_malloc.o OBJECT
-        include/ffmalloc.h src/ffmalloc.cc
+        src/static.cc
         )
 
 # executable
@@ -46,12 +47,10 @@ add_executable(ff_dev
 
 add_library(ffmalloc SHARED
         $<TARGET_OBJECTS:ff_core.o>
-        $<TARGET_OBJECTS:ff_malloc.o>
         )
 
 add_library(ffmalloc_static STATIC
         $<TARGET_OBJECTS:ff_core.o>
-        $<TARGET_OBJECTS:ff_malloc.o>
         )
 
 # ------------------------------------------------------------------------ #

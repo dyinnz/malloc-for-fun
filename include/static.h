@@ -30,6 +30,14 @@ class Static {
     num_arenas_ = num;
   }
 
+  static size_t num_arena() {
+    return num_arenas_;
+  }
+
+  static Arena *get_arena(size_t index) {
+    return arenas_[index];
+  }
+
   static ChunkRTree *chunk_rtree() {
     return chunk_rtree_;
   }
