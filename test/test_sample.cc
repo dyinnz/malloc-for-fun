@@ -33,20 +33,20 @@ TEST(BasicInfo, BasicInfo) {
 }
 
 TEST(Alignment, Alignment) {
-  for (int i = 1; i <= kCacheLine; ++i) {
+  for (size_t i = 1; i <= kCacheLine; ++i) {
     EXPECT_EQ(kCacheLine, cacheline_ceil(i));
   }
-  for (int i = kCacheLine + 1; i <= kCacheLine * 2; ++i) {
+  for (size_t i = kCacheLine + 1; i <= kCacheLine * 2; ++i) {
     EXPECT_EQ(kCacheLine * 2, cacheline_ceil(i));
   }
 }
 
 void RangeRWTest(void *address, size_t size) {
   int *p = static_cast<int *>(address);
-  for (int i = 0; i < size / sizeof(int); ++i) {
+  for (size_t i = 0; i < size / sizeof(int); ++i) {
     p[i] = 0x12345678;
   }
-  for (int i = 0; i < size / sizeof(int); ++i) {
+  for (size_t i = 0; i < size / sizeof(int); ++i) {
     EXPECT_EQ(p[i], 0x12345678);
   }
 }
@@ -85,7 +85,7 @@ TEST(List, ChunkList) {
 
   BaseAllocator base_alloc;
 
-  for (int i = 0; i < count; ++i) {
+  for (size_t i = 0; i < count; ++i) {
     Chunk *chunk = base_alloc.New<Chunk>(nullptr, i, nullptr, Chunk::State::kDirty, 0);
     chunk_list.push(chunk);
   }

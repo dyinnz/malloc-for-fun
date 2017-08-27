@@ -39,7 +39,7 @@ void *Arena::SmallAlloc(size_t cs, size_t sind) {
   Chunk::SlabBitmap &bitmap = slab->slab_bitmap();
   int index = bitmap.ffs_and_reset();
   assert(-1 != index);
-  assert(index < lookup_slab_size(sind) / cs);
+  assert(static_cast<size_t>(index) < lookup_slab_size(sind) / cs);
 
   if (!bitmap.any()) {
     nonempty_slab_[sind].erase(slab);

@@ -50,7 +50,7 @@ class Bitmap {
   }
 
   bool any() const {
-    for (int i = 0; i <= last_index(); ++i) {
+    for (size_t i = 0; i <= last_index(); ++i) {
       if (bits_[i]) {
         return true;
       }
@@ -59,7 +59,7 @@ class Bitmap {
   }
 
   bool all() const {
-    for (int i = 0; i < last_index(); ++i) {
+    for (size_t i = 0; i < last_index(); ++i) {
       if (~bits_[i]) {
         return false;
       }
@@ -73,7 +73,7 @@ class Bitmap {
   }
 
   int ffs_and_reset() {
-    for (int i = 0; i <= last_index(); ++i) {
+    for (size_t i = 0; i <= last_index(); ++i) {
       if (bits_[i]) {
         int ret = ::ffsl(bits_[i]) - 1;
         bits_[i] &= ~(1UL << ret);
@@ -92,7 +92,7 @@ class Bitmap {
   }
 
   // private:
-  long bits_[kArraySize];
+  unsigned long bits_[kArraySize];
   size_t num_;
 };
 
