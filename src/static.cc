@@ -47,7 +47,7 @@ void Static::create_thread_allocator() {
 Arena *Static::next_arena() {
   unsigned long curr = arena_index_.fetch_add(1, std::memory_order_relaxed) % num_arenas_;
   if (nullptr == arenas_[curr]) {
-    auto tmp_arena = Static::root_alloc()->New<Arena>();
+    auto tmp_arena = Static::root_alloc()->New<Arena>(curr);
     if (!atomic_cas_simple(&arenas_[curr], tmp_arena)) {
       Static::root_alloc()->Delete(tmp_arena);
     }

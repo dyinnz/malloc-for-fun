@@ -29,7 +29,7 @@ class Arena {
     size_t request{0};
   };
 
-  Arena() : chunk_mgr_(*this, base_alloc_) {
+  Arena(size_t index) : chunk_mgr_(*this, base_alloc_), index_(index) {
   }
 
   Arena(const Arena &) = delete;
@@ -64,6 +64,10 @@ class Arena {
     return large_stat_;
   }
 
+  size_t index() const {
+    return index_;
+  }
+
  private:
   Chunk *AllocChunkWrapper(size_t cs, size_t pind, size_t region_size);
 
@@ -78,13 +82,14 @@ class Arena {
   BaseAllocator base_alloc_;
   ChunkManager chunk_mgr_;
   std::mutex mutex_;
+  const size_t index_;
 } CACHELINE_ALIGN;
 
 /*------------------------------------------------------------------*/
 
 class ArenaAllocator {
  public:
-  ArenaAllocator() = default;
+  ArenaAllocator() : arena_(0) {}
   ArenaAllocator(const ArenaAllocator &) = delete;
   ArenaAllocator(ArenaAllocator &&) = delete;
   ArenaAllocator &operator=(const ArenaAllocator &) = delete;

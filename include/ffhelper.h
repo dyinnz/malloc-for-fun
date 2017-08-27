@@ -13,10 +13,8 @@ namespace ffmalloc {
 
 std::ostream &operator<<(std::ostream &out, const Chunk &chunk);
 
-void PrintStat(const ChunkManager::Stat &stat);
-void PrintStat(const Arena::SmallStatArray &stat_array);
-void PrintStat(const Arena::LargeStat &stat);
-void PrintStat(const ThreadAllocator::CacheStatArray &stat_array);
-void PrintStat(const ThreadAllocator::LargeStat &stat);
+void AllocatorStatReport(ThreadAllocator &thread_alloc);
+void AllocatorStatReport(Arena &arena);
+void AllocatorStatReport(ChunkManager &chunk_mgr);
 
 } // end of namespace ffmalloc

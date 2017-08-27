@@ -1,22 +1,26 @@
 
 #pragma once
 
+#include <array>
+#include <algorithm>
+#include <thread>
+#include <cmath>
 #include "size_classes.h"
 #include "arena.h"
-#include <array>
-#include "array"
 
 namespace ffmalloc {
 
 /*------------------------------------------------------------------*/
 
+constexpr static size_t kInitFillCount = 8;
+
 class CacheBin {
  private:
-  static constexpr int kMaxCaches = 200;
+  constexpr static size_t kMaxCaches = 200;
 
  public:
   CacheBin(Arena &arena, size_t capacity, size_t ind)
-      : arena_(arena), capacity_(capacity), ind_(ind), cs_(ind_to_cs(ind)), num_(0) {
+      : arena_(arena), capacity_(capacity), ind_(ind), cs_(ind_to_cs(ind)) {
     memset(caches_, 0, sizeof(void *) * capacity_);
   }
 
@@ -37,6 +41,8 @@ class CacheBin {
     return num_;
   }
 
+  void GarbageCollect();
+
  private:
   size_t FillCaches(size_t count);
 
@@ -48,13 +54,17 @@ class CacheBin {
   const size_t capacity_;
   const size_t ind_;
   const size_t cs_;
-  size_t num_;
+  size_t num_ {0};
+  size_t fill_count_ {kInitFillCount};
+  int low_mark_ {0};
 } CACHELINE_ALIGN;
 
 /*------------------------------------------------------------------*/
 
 class ThreadAllocator {
  public:
+  static constexpr size_t kMaxEventTick = 4096;
+
   struct CacheStat {
     size_t num_alloc{0};
     size_t num_free{0};
@@ -68,7 +78,8 @@ class ThreadAllocator {
 
   typedef std::array<CacheStat, kNumSmallClasses> CacheStatArray;
 
-  ThreadAllocator(Arena &arena) : arena_(arena) {
+ public:
+  ThreadAllocator(Arena &arena) : arena_(arena), thread_id_(std::this_thread::get_id()) {
     memset(cache_bins_, 0, sizeof(CacheBin *) * kNumSmallClasses);
   }
 
@@ -91,6 +102,14 @@ class ThreadAllocator {
     return large_stat_;
   }
 
+  std::thread::id thread_id() const {
+    return thread_id_;
+  }
+
+  Arena &arena() {
+    return arena_;
+  }
+
  private:
   CacheBin *cache_bin(size_t ind) {
     if (unlikely(nullptr == cache_bins_[ind])) {
@@ -100,11 +119,17 @@ class ThreadAllocator {
     return cache_bins_[ind];
   }
 
+  void Event();
+  void TriggerGC();
+
  private:
   CacheBin *cache_bins_[kNumSmallClasses];
   CacheStatArray cache_stats_;
   LargeStat large_stat_;
   Arena &arena_;
+  const std::thread::id thread_id_;
+  size_t event_tick_{0};
+  size_t gc_index_{0};
 } CACHELINE_ALIGN;
 
 /*------------------------------------------------------------------*/
@@ -113,19 +138,30 @@ class ThreadAllocator {
 inline void *
 CacheBin::PopRegion() {
   if (unlikely(0 == num_)) {
-    if (0 == FillCaches(capacity_ / 2)) {
+    if (unlikely(0 == FillCaches(fill_count_))) {
       func_error(logger, "fill caches failed");
       return nullptr;
     }
+
+    // user intends to use more memory
+    fill_count_ = std::min(fill_count_ * 2, capacity_ * 3 / 4);
   }
   num_ -= 1;
+  if (unlikely(static_cast<int>(num_) < low_mark_)) {
+    low_mark_ = static_cast<int>(num_);
+  }
   return caches_[num_];
 }
 
 inline void
 CacheBin::PushRegion(void *ptr) {
   if (unlikely(capacity_ == num_)) {
-    FlushCaches(capacity_ / 2);
+    // user has freed too much memory and the bin is full now.
+    // we always flush 3/4 caches under this circumstance
+    FlushCaches(capacity_ * 3 /4);
+
+    // user intends to use less memory
+    fill_count_ = std::max(fill_count_ / 2, kInitFillCount);
   }
   caches_[num_] = ptr;
   num_ += 1;
@@ -133,9 +169,10 @@ CacheBin::PushRegion(void *ptr) {
 
 inline size_t
 CacheBin::FillCaches(size_t count) {
+  assert(num_ + count < capacity_);
   for (size_t i = 0; i < count; ++i) {
     void *ptr = arena_.SmallAlloc(cs_, ind_);
-    if (nullptr == ptr) {
+    if (unlikely(nullptr == ptr)) {
       return i;
     }
     caches_[num_] = ptr;
@@ -153,6 +190,14 @@ CacheBin::FlushCaches(size_t count) {
   }
   memmove(caches_, caches_ + count, (num_ - count) * sizeof(void *));
   num_ -= count;
+
+  // reset low mark to current number of caches
+  low_mark_ = static_cast<int>(num_);
+}
+
+inline void
+CacheBin::GarbageCollect() {
+  FlushCaches(static_cast<size_t>(low_mark_ * 3 + 3) / 4);
 }
 
 /*------------------------------------------------------------------*/
@@ -178,7 +223,9 @@ ThreadAllocator::ThreadAlloc(size_t size) {
     if (g_stat) {
       cache_stats_[ind].num_alloc += 1;
     }
-    return cache_bin(ind)->PopRegion();
+    void *ptr = cache_bin(ind)->PopRegion();
+    Event();
+    return ptr;
 
   } else {
     size_t pind = sz_to_pind(size);
@@ -197,6 +244,7 @@ ThreadAllocator::ThreadDalloc(void *ptr) {
     if (chunk->is_slab()) {
       size_t ind = sz_to_ind(chunk->slab_region_size());
       cache_bin(ind)->PushRegion(ptr);
+      Event();
       if (g_stat) {
         cache_stats_[ind].num_free += 1;
       }
@@ -244,6 +292,28 @@ ThreadAllocator::ThreadRealloc(void *old, size_t size) {
     }
   }
   return addr;
+}
+
+inline void
+ThreadAllocator::Event() {
+  event_tick_ += 1;
+  if (unlikely(event_tick_ > 4096)) {
+    event_tick_ = 0;
+    TriggerGC();
+  }
+}
+
+inline void
+ThreadAllocator::TriggerGC() {
+  gc_index_ += 1;
+  while (nullptr == cache_bins_[gc_index_]) {
+    gc_index_ += 1;
+    if (gc_index_ >= kNumSmallClasses) {
+      gc_index_ = 0;
+    }
+  }
+  func_debug(logger, "bin[{}] gc", gc_index_);
+  cache_bins_[gc_index_]->GarbageCollect();
 }
 
 inline const ThreadAllocator::CacheStatArray &

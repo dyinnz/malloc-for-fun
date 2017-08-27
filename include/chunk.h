@@ -132,6 +132,10 @@ class ChunkManager {
     return stat_;
   }
 
+  Arena& arena() {
+    return arena_;
+  }
+
  private:
   Chunk *OSMapChunk(size_t cs, size_t slab_region_size);
   void OSUnmapChunk(Chunk *chunk);

@@ -37,7 +37,7 @@ add_library(ff_core.o OBJECT
         src/ffmalloc.cc
         src/pages.cc
         src/static.cc
-        test/simplelogger.cc)
+        src/simplelogger.cc)
 
 # executable
 add_executable(ff_dev

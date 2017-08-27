@@ -63,7 +63,7 @@ TEST(OSMap, OSMap) {
 
 TEST(ChunkManager, ChunkManager) {
   BaseAllocator base_alloc;
-  Arena arena;
+  Arena arena(0);
   ChunkManager mgr(arena, base_alloc);
   Chunk *chunk = nullptr;
 
@@ -131,7 +131,7 @@ TEST(RadixTree, RadixTree) {
 
 TEST(RadixTree, ChunkRegister) {
   BaseAllocator base_alloc;
-  Arena arena;
+  Arena arena(0);
   ChunkManager mgr(arena, base_alloc);
 
   constexpr size_t large_size = 4 * kPage;
