@@ -171,3 +171,6 @@ void Logger::print_wrapper(Level level, A... args) {
 }
 
 } // end of namespace simple_logger
+
+extern simplelogger::Logger logger;
+

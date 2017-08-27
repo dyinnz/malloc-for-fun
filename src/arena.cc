@@ -27,8 +27,7 @@ void *Arena::SmallAlloc(size_t cs, size_t sind) {
     const size_t pind = sz_to_pind(slab_size);
     Chunk *new_slab = AllocChunkWrapper(slab_size, pind, cs);
     if (nullptr == new_slab) {
-      fprintf(stderr, "%s(): ArenaAlloc slab failed: cs %zu, sind %zu\n",
-              __func__, cs, sind);
+      func_error(logger, "alloc large chunk for slab failed: cs {}, slab_size {}", cs, slab_size);
       return nullptr;
     }
     nonempty_slab_[sind].push(new_slab);

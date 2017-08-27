@@ -4,6 +4,7 @@
 #include "size_classes.h"
 #include "arena.h"
 #include <array>
+#include "array"
 
 namespace ffmalloc {
 
@@ -23,7 +24,8 @@ class CacheBin {
 
   void *PopRegion() {
     if (unlikely(0 == num_)) {
-      if (!FillCaches(capacity_ / 2)) {
+      if (0 == FillCaches(capacity_ / 2)) {
+        func_error(logger, "fill caches failed");
         return nullptr;
       }
     }
@@ -39,17 +41,21 @@ class CacheBin {
     num_ += 1;
   }
 
+  size_t num_cache() const {
+    return num_;
+  }
+
  private:
-  bool FillCaches(size_t count) {
+  size_t FillCaches(size_t count) {
     for (size_t i = 0; i < count; ++i) {
       void *ptr = arena_.SmallAlloc(cs_, ind_);
       if (nullptr == ptr) {
-        return false;
+        return i;
       }
       caches_[num_] = ptr;
       num_ += 1;
     }
-    return true;
+    return count;
   }
 
   void FlushCaches(size_t count) {
@@ -73,6 +79,19 @@ class CacheBin {
 
 class ThreadAllocator {
  public:
+  struct CacheStat {
+    size_t num_alloc {0};
+    size_t num_free {0};
+    size_t num_cache {0};
+  };
+
+  struct LargeStat {
+    size_t alloc {0};
+    size_t free {0};
+  };
+
+  typedef std::array<CacheStat, kNumSmallClasses> CacheStatArray;
+
   ThreadAllocator(Arena &arena) : arena_(arena) {
     memset(cache_bins_, 0, sizeof(CacheBin *) * kNumSmallClasses);
   }
@@ -89,13 +108,24 @@ class ThreadAllocator {
     if (unlikely(0 == size)) {
       return nullptr;
     }
+
     if (size <= kMaxSmallClass) {
       size_t ind = sz_to_ind(size);
+
+      if (g_stat) {
+        cache_stats_[ind].num_alloc += 1;
+      }
+
       return cache_bin(ind)->PopRegion();
 
     } else {
       size_t pind = sz_to_pind(size);
       size_t cs = sz_to_cs(size);
+
+      if (g_stat) {
+        large_stat_.alloc += cs;
+      }
+
       return arena_.LargeAlloc(cs, pind);
     }
   }
@@ -106,8 +136,16 @@ class ThreadAllocator {
       if (chunk->is_slab()) {
         size_t ind = sz_to_ind(chunk->slab_region_size());
         cache_bin(ind)->PushRegion(ptr);
+
+        if (g_stat) {
+          cache_stats_[ind].num_free += 1;
+        }
       } else {
         chunk->arena()->LargeDalloc(chunk);
+
+        if (g_stat) {
+          large_stat_.free -= chunk->size();
+        }
       }
     }
   }
@@ -132,12 +170,32 @@ class ThreadAllocator {
       size_t ind = sz_to_ind(old_size);
       cache_bin(ind)->PushRegion(old);
 
+      if (g_stat) {
+        cache_stats_[ind].num_free -= 1;
+      }
     } else {
       size_t old_size = chunk->size();
       memmove(addr, old, std::min(old_size, size));
       chunk->arena()->LargeDalloc(chunk);
+
+      if (g_stat) {
+        large_stat_.free -= chunk->size();
+      }
     }
     return addr;
+  }
+
+  const CacheStatArray& cache_stats() {
+    for (size_t i = 0; i < kNumSmallClasses; ++i) {
+      if (nullptr != cache_bins_[i]) {
+        cache_stats_[i].num_cache = cache_bins_[i]->num_cache();
+      }
+    }
+    return cache_stats_;
+  }
+
+  const LargeStat& large_stat() {
+    return large_stat_;
   }
 
  private:
@@ -151,6 +209,8 @@ class ThreadAllocator {
 
  private:
   CacheBin *cache_bins_[kNumSmallClasses];
+  CacheStatArray cache_stats_;
+  LargeStat large_stat_;
   Arena &arena_;
 } CACHELINE_ALIGN;
 

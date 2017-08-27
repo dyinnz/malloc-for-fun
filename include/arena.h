@@ -45,6 +45,7 @@ class Arena {
     assert(cs >= kMinLargeClass);
     Chunk *chunk = AllocChunkWrapper(cs, pind, kNonSlabAttr);
     if (nullptr == chunk) {
+      func_error(logger, "alloc large chunk failed");
       return nullptr;
     } else {
       return chunk->address();

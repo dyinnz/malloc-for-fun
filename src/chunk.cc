@@ -64,21 +64,23 @@ ChunkManager::~ChunkManager() {
 Chunk *
 ChunkManager::OSMapChunk(size_t cs, size_t slab_region_size) {
   void *chunk_data = OSAllocMap(cs);
-  if (nullptr != chunk_data) {
-    Chunk *chunk = base_alloc_.New<Chunk>(chunk_data, cs, &arena_, Chunk::State::kDirty, slab_region_size);
-    if (nullptr == chunk) {
-      fprintf(stderr, "%s() alloc chunk meta failed\n", __func__);
-      OSDallocMap(chunk_data, cs);
-      return nullptr;
-
-    } else {
-      RegisterRtree(chunk);
-      stat_.meta += sizeof(Chunk);
-      stat_.hold += chunk->size();
-      return chunk;
-    }
+  if (nullptr == chunk_data) {
+    func_error(logger, "ChunkManager alloc chunk data from os failed");
+    return nullptr;
   }
-  return nullptr;
+
+  Chunk *chunk = base_alloc_.New<Chunk>(chunk_data, cs, &arena_, Chunk::State::kDirty, slab_region_size);
+  if (nullptr == chunk) {
+    OSDallocMap(chunk_data, cs);
+    func_error(logger, "alloc chunk meta failed");
+    return nullptr;
+
+  } else {
+    RegisterRtree(chunk);
+    stat_.meta += sizeof(Chunk);
+    stat_.hold += chunk->size();
+    return chunk;
+  }
 }
 
 void
@@ -151,6 +153,7 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
     if (nullptr == chunk) {
       chunk = OSMapChunk(kStandardChunk, 0);
       if (nullptr == chunk) {
+        func_error(logger, "alloc standard chunk for splitting failed");
         return nullptr;
       }
     }
@@ -164,6 +167,7 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
   } else {
     chunk = OSMapChunk(cs, slab_region_size);
     if (nullptr == chunk) {
+      func_error(logger, "alloc large chunk failed");
       return nullptr;
     }
   }

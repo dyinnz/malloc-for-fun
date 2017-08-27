@@ -2,11 +2,12 @@
 #include <cstdio>
 #include <cassert>
 #include <cstring>
+#include <cerrno>
 
 #include <sys/mman.h>
-#include <errno.h>
 
 #include "basic.h"
+#include "simplelogger.h"
 
 namespace ffmalloc {
 
@@ -21,7 +22,7 @@ OSAllocMap(size_t size) {
                    0, 0);
 
   if (MAP_FAILED == ret) {
-    fprintf(stderr, "mmap() failed: %s, size: %zu\n", strerror(errno), size);
+    func_error(logger, "mmap failed: {}, size: {}", strerror(errno), size);
     return nullptr;
   }
 
@@ -34,7 +35,7 @@ OSDallocMap(void *addr, size_t size) {
   assert(nullptr != addr);
 
   if (-1 == munmap(addr, size)) {
-    fprintf(stderr, "munmap() failed: %s size: %zu\n", strerror(errno), size);
+    func_error(logger, "munmap failed: {} size: {}", strerror(errno), size);
   }
 }
 

@@ -12,6 +12,12 @@ constexpr size_t kMinAllocMmap = 2 * 1024 * 1024; // 2M
 constexpr size_t kStandardChunk = kMinAllocMmap;
 constexpr uint16_t kNonSlabAttr = 0;
 
+#ifdef MEMORY_STAT
+constexpr bool g_stat = false;
+#else
+constexpr bool g_stat = true;
+#endif
+
 /*
 inline size_t alignment_ceil(size_t size, size_t alignment) {
   return (size + alignment - 1) / alignment * alignment;

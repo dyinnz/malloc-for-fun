@@ -20,8 +20,12 @@ int main() {
   PrintStat(Static::get_arena(0)->small_stats());
   PrintStat(Static::get_arena(0)->large_stat());
   PrintStat(Static::get_arena(0)->chunk_manager().stat());
+  PrintStat(Static::thread_alloc()->cache_stats());
+  PrintStat(Static::thread_alloc()->large_stat());
 
   ff_free(test_ptr);
+
+  ff_free(ff_malloc(1L << 48));
 
   return 0;
 }

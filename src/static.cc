@@ -46,7 +46,6 @@ void Static::create_thread_allocator() {
 
 Arena *Static::next_arena() {
   unsigned long curr = arena_index_.fetch_add(1, std::memory_order_relaxed) % num_arenas_;
-  // printf("%s(): arena[%zu] of %zu\n", __func__, curr, num_arenas_);
   if (nullptr == arenas_[curr]) {
     auto tmp_arena = Static::root_alloc()->New<Arena>();
     if (!atomic_cas_simple(&arenas_[curr], tmp_arena)) {
