@@ -32,10 +32,10 @@ class Chunk : public ListNode<Chunk> {
   Chunk() : Chunk(nullptr, 0, nullptr, State::kClean, 0) {
   }
 
-  Chunk(const Chunk&) = delete;
-  Chunk(Chunk&&) = delete;
-  Chunk& operator=(const Chunk&) = delete;
-  Chunk& operator=(Chunk&&) = delete;
+  Chunk(const Chunk &) = delete;
+  Chunk(Chunk &&) = delete;
+  Chunk &operator=(const Chunk &) = delete;
+  Chunk &operator=(Chunk &&) = delete;
 
   Arena *arena() {
     return arena_;
@@ -107,20 +107,20 @@ class ChunkManager {
 
  public:
   struct Stat {
-    size_t hold {0};
-    size_t request {0};
-    size_t meta {0};
-    size_t clean {0};
+    size_t hold{0};
+    size_t request{0};
+    size_t meta{0};
+    size_t clean{0};
   };
 
   ChunkManager(Arena &arena, BaseAllocator &base_alloc)
       : arena_(arena), base_alloc_(base_alloc), stat_() {
   }
 
-  ChunkManager(const ChunkManager&) = delete;
-  ChunkManager(ChunkManager&&) = delete;
-  ChunkManager& operator=(const ChunkManager&) = delete;
-  ChunkManager& operator=(ChunkManager&&) = delete;
+  ChunkManager(const ChunkManager &) = delete;
+  ChunkManager(ChunkManager &&) = delete;
+  ChunkManager &operator=(const ChunkManager &) = delete;
+  ChunkManager &operator=(ChunkManager &&) = delete;
 
   ~ChunkManager();
 
@@ -128,7 +128,7 @@ class ChunkManager {
 
   void DallocChunk(Chunk *chunk);
 
-  const Stat& stat() const {
+  const Stat &stat() const {
     return stat_;
   }
 

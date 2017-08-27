@@ -2,7 +2,6 @@
 #include <cassert>
 
 #include "chunk.h"
-#include "simplelogger.h"
 
 namespace ffmalloc {
 
@@ -90,7 +89,7 @@ ChunkManager::OSUnmapChunk(Chunk *chunk) {
   stat_.hold -= chunk->size();
 
   base_alloc_.Delete(chunk);
-  stat_.meta -=  sizeof(Chunk);
+  stat_.meta -= sizeof(Chunk);
 }
 
 Chunk *

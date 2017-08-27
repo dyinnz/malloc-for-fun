@@ -1,6 +1,5 @@
 
 #include <cstdio>
-#include <cassert>
 #include <cstring>
 #include <cerrno>
 

@@ -5,7 +5,6 @@
 #include <sstream>
 #include <iomanip>
 #include "ffhelper.h"
-#include "simplelogger.h"
 
 namespace ffmalloc {
 

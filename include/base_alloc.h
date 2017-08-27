@@ -120,6 +120,6 @@ class BaseAllocator {
  private:
   List<BaseNode> free_lists_[kNumSmallClasses];
   std::mutex mutex_;
-} CACHELINE_ALIGN ;
+} CACHELINE_ALIGN;
 
 } // end of namespace ffmalloc
