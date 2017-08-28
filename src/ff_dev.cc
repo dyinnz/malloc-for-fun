@@ -17,15 +17,53 @@ int main() {
 
   void *test_ptr = ff_malloc(128);
 
-  PrintStat(Static::get_arena(0)->small_stats());
-  PrintStat(Static::get_arena(0)->large_stat());
-  PrintStat(Static::get_arena(0)->chunk_manager().stat());
-  PrintStat(Static::thread_alloc()->cache_stats());
-  PrintStat(Static::thread_alloc()->large_stat());
+  printf("\n");
+  AllocatorStatReport(*Static::thread_alloc());
+  printf("\n");
+  for (size_t i = 0; i < Static::num_arena(); ++i) {
+    if (nullptr != Static::get_arena(i)) {
+      AllocatorStatReport(*Static::get_arena(i));
+      printf("\n");
+      AllocatorStatReport(Static::get_arena(i)->chunk_manager());
+      printf("\n");
+    }
+  }
 
   ff_free(test_ptr);
 
-  ff_free(ff_malloc(1L << 48));
+  ff_free(ff_malloc(32));
+
+  for (size_t i = 0; i < 100; ++i) {
+    ff_free(ff_malloc(128));
+  }
+
+  printf("\n");
+  AllocatorStatReport(*Static::thread_alloc());
+  printf("\n");
+  for (size_t i = 0; i < Static::num_arena(); ++i) {
+    if (nullptr != Static::get_arena(i)) {
+      AllocatorStatReport(*Static::get_arena(i));
+      printf("\n");
+      AllocatorStatReport(Static::get_arena(i)->chunk_manager());
+      printf("\n");
+    }
+  }
+
+  for (size_t i = 0; i < 100; ++i) {
+    ff_free(ff_malloc(32));
+  }
+
+  printf("\n");
+  AllocatorStatReport(*Static::thread_alloc());
+  printf("\n");
+  for (size_t i = 0; i < Static::num_arena(); ++i) {
+    if (nullptr != Static::get_arena(i)) {
+      AllocatorStatReport(*Static::get_arena(i));
+      printf("\n");
+      AllocatorStatReport(Static::get_arena(i)->chunk_manager());
+      printf("\n");
+    }
+  }
 
   return 0;
 }
