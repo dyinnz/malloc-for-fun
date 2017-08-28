@@ -10,25 +10,24 @@ include_directories(googletest/googletest/include)
 include_directories(googletest/googlemock/include)
 
 # project include
-include_directories(include)
 include_directories(src)
 
 add_library(ff_core.o OBJECT
-        include/arena.h
-        include/base_alloc.h
-        include/basic.h
-        include/bitmap.h
-        include/chunk.h
-        include/ffhelper.h
-        include/ffmalloc.h
-        include/list.h
-        include/pages.h
-        include/radix_tree.h
-        include/size.h
-        include/size_classes.h
-        include/static.h
-        include/thread_alloc.h
-        include/simplelogger.h
+        src/arena.h
+        src/base_alloc.h
+        src/basic.h
+        src/bitmap.h
+        src/chunk.h
+        src/ffhelper.h
+        src/ffmalloc.h
+        src/list.h
+        src/pages.h
+        src/radix_tree.h
+        src/size.h
+        src/size_classes.h
+        src/static.h
+        src/thread_alloc.h
+        src/simplelogger.h
         src/arena.cc
         src/base_alloc.cc
         src/chunk.cc
