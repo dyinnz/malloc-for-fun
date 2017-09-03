@@ -8,13 +8,10 @@
 #include "ffhelper.h"
 #include "ffmalloc.h"
 
-int main() {
+using namespace std;
+using namespace ffmalloc;
 
-  using namespace std;
-  using namespace ffmalloc;
-
-  logger.log("chunk size: {}", sizeof(Chunk));
-
+void TestReport() {
   void *test_ptr = ff_malloc(128);
 
   printf("\n");
@@ -64,6 +61,23 @@ int main() {
       printf("\n");
     }
   }
+}
+
+void TestChunkManagerGC() {
+  void *k20 = ff_malloc(20 * 1024);
+  void *k30 = ff_malloc(32 * 1024);
+  ff_free(k20);
+  for (int i = 0; i < 10000; ++i) {
+    ff_free(ff_malloc(32 * 1024));
+  }
+  ff_free(k30);
+}
+
+int main() {
+
+  logger.log("chunk size: {}", sizeof(Chunk));
+
+  TestChunkManagerGC();
 
   return 0;
 }

@@ -54,7 +54,7 @@ void RangeRWTest(void *address, size_t size) {
 TEST(OSMap, OSMap) {
   constexpr size_t size = 4 * 1024 * 1024;
 
-  void *address = OSAllocMap(size);
+  void *address = OSAllocMap(nullptr, size);
 
   RangeRWTest(address, size);
 
@@ -86,7 +86,7 @@ TEST(List, ChunkList) {
   BaseAllocator base_alloc;
 
   for (size_t i = 0; i < count; ++i) {
-    Chunk *chunk = base_alloc.New<Chunk>(nullptr, i, nullptr, Chunk::State::kDirty, 0);
+    Chunk *chunk = base_alloc.New<Chunk>(nullptr, i, nullptr, Chunk::State::kDirty, 0, 0);
     chunk_list.push(chunk);
   }
 
@@ -100,9 +100,9 @@ TEST(List, ChunkList) {
     num -= 1;
   }
 
-  Chunk *x = base_alloc.New<Chunk>(nullptr, 111, nullptr, Chunk::State::kDirty, 0);
-  Chunk *y = base_alloc.New<Chunk>(nullptr, 222, nullptr, Chunk::State::kDirty, 0);
-  Chunk *z = base_alloc.New<Chunk>(nullptr, 333, nullptr, Chunk::State::kDirty, 0);
+  Chunk *x = base_alloc.New<Chunk>(nullptr, 111, nullptr, Chunk::State::kDirty, 0, 0);
+  Chunk *y = base_alloc.New<Chunk>(nullptr, 222, nullptr, Chunk::State::kDirty, 0, 0);
+  Chunk *z = base_alloc.New<Chunk>(nullptr, 333, nullptr, Chunk::State::kDirty, 0, 0);
   chunk_list.push(x);
   chunk_list.push(y);
   chunk_list.push(z);

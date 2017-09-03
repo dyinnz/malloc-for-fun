@@ -17,11 +17,12 @@ class Chunk : public ListNode<Chunk> {
   typedef Bitmap<kMaxSlabRegions> SlabBitmap;
   enum class State : uint8_t { kActive, kDirty, kClean };
 
-  Chunk(void *address, size_t size, Arena *arena, State state, size_t region_size)
+  Chunk(void *address, size_t size, Arena *arena, State state, uint8_t epoch, size_t region_size)
       : address_(address),
         size_(size),
         arena_(arena),
         state_(state),
+        epoch_(epoch),
         slab_region_size_(static_cast<uint16_t>(region_size)),
         slab_bitmap_() {
     if (is_slab()) {
@@ -29,7 +30,7 @@ class Chunk : public ListNode<Chunk> {
     }
   }
 
-  Chunk() : Chunk(nullptr, 0, nullptr, State::kClean, 0) {
+  Chunk() : Chunk(nullptr, 0, nullptr, State::kClean, 0, 0) {
   }
 
   Chunk(const Chunk &) = delete;
@@ -88,11 +89,20 @@ class Chunk : public ListNode<Chunk> {
     return slab_bitmap_;
   }
 
+  void set_epoch(uint8_t epoch) {
+    epoch_ = epoch;
+  }
+
+  uint8_t epoch() const {
+    return epoch_;
+  }
+
  private:
   void *address_{nullptr};
   size_t size_{0};
   Arena *arena_;
   State state_{State::kDirty};
+  uint8_t epoch_ {0};
   uint16_t slab_region_size_{0};
   SlabBitmap slab_bitmap_;
 };
@@ -104,6 +114,7 @@ class ChunkManager {
  private:
 // TODO:
   static constexpr int kMaxBinSize = 20;
+  static constexpr size_t kMaxEventTick = 4096;
 
  public:
   struct Stat {
@@ -136,9 +147,17 @@ class ChunkManager {
     return arena_;
   }
 
+  void Event();
+  void TriggerGC();
+
  private:
-  Chunk *OSMapChunk(size_t cs, size_t slab_region_size);
+  Chunk *OSNewChunk(size_t cs, size_t slab_region_size);
+  void OSDeleteChunk(Chunk *chunk);
+
+  bool OSMapChunk(Chunk *chunk);
   void OSUnmapChunk(Chunk *chunk);
+
+  void PushCleanChunk(size_t pind, Chunk *chunk);
 
   Chunk *SplitChunk(Chunk *curr, size_t head_size);
   Chunk *MergeChunk(Chunk *head, Chunk *tail);
@@ -146,9 +165,25 @@ class ChunkManager {
  private:
   Arena &arena_;
   BaseAllocator &base_alloc_;
-  ChunkList avail_bins_[kNumGePageClasses];
+  ChunkList dirty_chunk_[kNumGePageClasses];
+  ChunkList clean_chunk_[kNumGePageClasses+1];
 
   Stat stat_;
+  size_t event_tick_ {0};
+  uint8_t epoch_ {0};
 };
+
+std::ostream &operator<<(std::ostream &out, const Chunk &chunk);
+
+/*------------------------------------------------------------------*/
+
+inline void
+ChunkManager::Event() {
+  event_tick_ += 1;
+  if (event_tick_ > kMaxEventTick) {
+    event_tick_ = 0;
+    TriggerGC();
+  }
+}
 
 } // end of namespace ffmalloc

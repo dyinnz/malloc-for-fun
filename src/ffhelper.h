@@ -11,8 +11,6 @@
 
 namespace ffmalloc {
 
-std::ostream &operator<<(std::ostream &out, const Chunk &chunk);
-
 void AllocatorStatReport(ThreadAllocator &thread_alloc);
 void AllocatorStatReport(Arena &arena);
 void AllocatorStatReport(ChunkManager &chunk_mgr);

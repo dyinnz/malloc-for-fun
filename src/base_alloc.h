@@ -39,7 +39,7 @@ class BaseAllocator {
       return node;
 
     } else {
-      void *addr = OSAllocMap(cs);
+      void *addr = OSAllocMap(nullptr, cs);
       if (nullptr == addr) {
         func_error(logger, "map large memory from os failed.");
         return nullptr;
@@ -68,7 +68,7 @@ class BaseAllocator {
 
   void *AllocPermanent(size_t size) {
     assert(size % kPage == 0);
-    return OSAllocMap(size);
+    return OSAllocMap(nullptr, size);
   }
 
   void ReturnPermanentMemory(void *ptr, size_t size) {
@@ -79,14 +79,14 @@ class BaseAllocator {
   template<class T, class... Args>
   T *New(Args &&... args) {
     void *mem = Alloc(sizeof(T));
-    T *p = new(mem) T(args...);
+    T *p = new(mem) T(std::forward<Args>(args)...);
     return p;
   }
 
   template<class T, class... Args>
   T *NewPermanent(Args &&... args) {
     void *mem = AllocPermanent(sizeof(T));
-    T *p = new(mem) T(args...);
+    T *p = new(mem) T(std::forward<Args>(args)...);
     return p;
   }
 
@@ -99,7 +99,7 @@ class BaseAllocator {
  private:
   bool AllocSmallNodes(size_t sind, size_t cs) {
     size_t slab_size = lookup_slab_size(sind);
-    char *addr = static_cast<char *>(OSAllocMap(slab_size));
+    char *addr = static_cast<char *>(OSAllocMap(nullptr, slab_size));
     if (nullptr == addr) {
       func_error(logger, "map os for small nodes failed. cs: {} slab_size: {}", cs, slab_size);
       return false;

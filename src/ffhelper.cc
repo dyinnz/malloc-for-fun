@@ -8,37 +8,7 @@
 
 namespace ffmalloc {
 
-namespace details {
-
-constexpr char kChunkActive[] = "Active";
-constexpr char kChunkDirty[] = "Dirty";
-constexpr char kChunkClean[] = "Clean";
-constexpr char kChunkUnknown[] = "Unknown";
-
-} // end of namespace details
-
 using namespace simplelogger;
-
-std::ostream &operator<<(std::ostream &out, const Chunk &chunk) {
-  const char *state = nullptr;
-  switch (chunk.state()) {
-    case Chunk::State::kActive:state = details::kChunkActive;
-      break;
-    case Chunk::State::kDirty:state = details::kChunkDirty;
-      break;
-    case Chunk::State::kClean:state = details::kChunkClean;
-      break;
-    default:state = details::kChunkUnknown;
-  }
-
-  out << "Chunk[" << &chunk
-      << "]{ " "addr: " << chunk.address()
-      << " size: " << chunk.size()
-      << " region_size: " << chunk.slab_region_size()
-      << " " << state
-      << " }";
-  return out;
-}
 
 void AllocatorStatReport(ThreadAllocator &thread_alloc) {
   std::ostringstream oss;

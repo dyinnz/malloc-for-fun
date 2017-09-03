@@ -11,12 +11,12 @@
 namespace ffmalloc {
 
 void *
-OSAllocMap(size_t size) {
+OSAllocMap(void *addr, size_t size) {
   // TODO: tmp
   // assert(size >= kMinAllocMmap);
   assert(size % kPage == 0);
 
-  void *ret = mmap(nullptr, size,
+  void *ret = mmap(addr, size,
                    PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE,
                    0, 0);
 

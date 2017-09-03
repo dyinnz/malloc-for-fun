@@ -3,7 +3,7 @@
 
 namespace ffmalloc {
 
-void *OSAllocMap(size_t size);
+void *OSAllocMap(void *addr, size_t size);
 
 void OSDallocMap(void *addr, size_t size);
 
