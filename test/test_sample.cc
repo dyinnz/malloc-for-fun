@@ -69,13 +69,15 @@ TEST(ChunkManager, ChunkManager) {
 
   constexpr size_t huge_size = 4 * 1024 * 1024;
 
-  chunk = mgr.AllocChunk(huge_size, sz_to_pind(huge_size), false);
+  chunk = mgr.AllocChunk(huge_size, sz_to_pind(huge_size), kNonSlabAttr);
   RangeRWTest(chunk->address(), huge_size);
   mgr.DallocChunk(chunk);
 
   constexpr size_t large_size = 4 * 1024;
-  chunk = mgr.AllocChunk(large_size, sz_to_pind(large_size), false);
+  chunk = mgr.AllocChunk(large_size, sz_to_pind(large_size), kNonSlabAttr);
+  func_debug(logger, "{}", *chunk);
   RangeRWTest(chunk->address(), large_size);
+  func_debug(logger, "{}", *chunk);
   mgr.DallocChunk(chunk);
 }
 

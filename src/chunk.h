@@ -154,8 +154,10 @@ class ChunkManager {
   Chunk *OSNewChunk(size_t cs, size_t slab_region_size);
   void OSDeleteChunk(Chunk *chunk);
 
-  bool OSMapChunk(Chunk *chunk);
-  void OSUnmapChunk(Chunk *chunk);
+  void OSCommitChunk(Chunk *chunk);
+  void OSReleaseChunk(Chunk *chunk);
+
+  Chunk* FindSuitableChunk(ChunkList *bins, size_t bin_size, size_t start_pind);
 
   void PushCleanChunk(size_t pind, Chunk *chunk);
 

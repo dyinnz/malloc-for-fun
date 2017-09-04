@@ -31,6 +31,7 @@ std::ostream &operator<<(std::ostream &out, const Chunk &chunk) {
       << "]{ " "addr: " << chunk.address()
       << " size: " << chunk.size()
       << " region_size: " << chunk.slab_region_size()
+      << " epoch: " << static_cast<int>(chunk.epoch())
       << " " << state
       << " }";
   return out;
@@ -89,6 +90,11 @@ ChunkManager::~ChunkManager() {
       OSDeleteChunk(chunks.pop());
     }
   }
+  for (auto &chunks: clean_chunk_) {
+     while (!chunks.empty()) {
+      OSDeleteChunk(chunks.pop());
+    }
+  }
 }
 
 Chunk *
@@ -109,12 +115,16 @@ ChunkManager::OSNewChunk(size_t cs, size_t slab_region_size) {
     RegisterRtree(chunk);
     stat_.meta += sizeof(Chunk);
     stat_.hold += chunk->size();
+
+    func_debug(logger, "{}", *chunk);
     return chunk;
   }
 }
 
 void
 ChunkManager::OSDeleteChunk(Chunk *chunk) {
+  func_debug(logger, "{}", *chunk);
+
   DeregisterRtree(chunk);
   OSDallocMap(chunk->address(), chunk->size());
   stat_.hold -= chunk->size();
@@ -123,25 +133,17 @@ ChunkManager::OSDeleteChunk(Chunk *chunk) {
   stat_.meta -= sizeof(Chunk);
 }
 
-bool
-ChunkManager::OSMapChunk(Chunk *chunk){
+void
+ChunkManager::OSCommitChunk(Chunk *chunk){
   assert(chunk->state() == Chunk::State::kClean);
-  void *chunk_data = OSAllocMap(chunk->address(), chunk->size());
-  if (nullptr == chunk_data) {
-    func_error(logger, "ChunkManager alloc chunk data from os failed");
-    return false;
-  }
-
+  OSCommitPage(chunk->address(), chunk->size());
   chunk->set_state(Chunk::State::kDirty);
-  chunk->set_epoch(epoch_);
-  stat_.hold += chunk->size();
-  return true;
 }
 
 void
-ChunkManager::OSUnmapChunk(Chunk *chunk){
+ChunkManager::OSReleaseChunk(Chunk *chunk){
   assert(chunk->state() == Chunk::State::kDirty);
-  OSDallocMap(chunk->address(), chunk->size());
+  OSReleasePage(chunk->address(), chunk->size());
   chunk->set_state(Chunk::State::kClean);
   stat_.hold -= chunk->size();
 }
@@ -153,7 +155,7 @@ ChunkManager::SplitChunk(Chunk *curr, size_t head_size) {
                                        curr->size() - head_size,
                                        &arena_,
                                        curr->state(),
-                                       epoch_,
+                                       curr->epoch(),
                                        kNonSlabAttr);
   if (nullptr == tail) {
     return nullptr;
@@ -171,6 +173,7 @@ Chunk *
 ChunkManager::MergeChunk(Chunk *head, Chunk *tail) {
   assert(head->char_addr() + head->size() == tail->char_addr());
   assert(head->arena() == tail->arena());
+  assert(head->state() == tail->state());
 
   DeregisterRtree(head);
   DeregisterRtree(tail);
@@ -183,6 +186,21 @@ ChunkManager::MergeChunk(Chunk *head, Chunk *tail) {
   return head;
 }
 
+Chunk*
+ChunkManager::FindSuitableChunk(ChunkList *bins, size_t bin_size, size_t start_pind) {
+  for (size_t i = start_pind; i < bin_size; ++i) {
+    if (!bins[i].empty()) {
+      Chunk *curr = bins[i].pop();
+      if (curr->size() > pind_to_cs(start_pind)) {
+        Chunk *tail = SplitChunk(curr, pind_to_cs(start_pind));
+        bins[get_fit_pind(tail)].push(tail);
+      }
+      return curr;
+    }
+  }
+  return nullptr;
+}
+
 Chunk *
 ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
   assert(cs == sz_to_cs(cs));
@@ -190,19 +208,19 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
 
   Chunk *chunk = nullptr;
 
-  /*
-  if (pind < kNumGePageClasses && !dirty_chunk_[pind].empty()) {
-    chunk = dirty_chunk_[pind].pop();
-    */
-
   if (pind < kNumGePageClasses) {
-    // first fit
-    for (size_t i = pind; i < kNumGePageClasses; ++i) {
-      if (!dirty_chunk_[i].empty()) {
-        chunk = dirty_chunk_[i].pop();
-        break;
+    // first fit search for dirty chunks
+    chunk = FindSuitableChunk(dirty_chunk_, kNumGePageClasses, pind);
+
+    // first fit search for clean chunks
+    if (nullptr == chunk) {
+      chunk = FindSuitableChunk(clean_chunk_, kNumGePageClasses+1, pind);
+      if (nullptr != chunk) {
+        func_debug(logger, "fetch clean {}", *chunk);
+        OSCommitChunk(chunk);
       }
     }
+
     // mmap if no available chunk
     if (nullptr == chunk) {
       chunk = OSNewChunk(kStandardChunk, 0);
@@ -210,13 +228,13 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
         func_error(logger, "alloc standard chunk for splitting failed");
         return nullptr;
       }
+      // split original chunk if get a larger one
+      if (chunk->size() > cs) {
+        Chunk *tail = SplitChunk(chunk, cs);
+        dirty_chunk_[get_fit_pind(tail)].push(tail);
+      }
     }
-
-    // split if gets a larger chunk
-    if (chunk->size() > cs) {
-      Chunk *tail = SplitChunk(chunk, cs);
-      dirty_chunk_[get_fit_pind(tail)].push(tail);
-    }
+    assert(nullptr != chunk);
 
   } else {
     chunk = OSNewChunk(cs, slab_region_size);
@@ -232,6 +250,7 @@ ChunkManager::AllocChunk(size_t cs, size_t pind, size_t slab_region_size) {
 
   chunk->set_slab_region_size(slab_region_size);
   chunk->set_state(Chunk::State::kActive);
+  chunk->set_epoch(epoch_);
   if (chunk->is_slab()) {
     RegisterRtreeInterior(chunk);
   }
@@ -254,29 +273,14 @@ ChunkManager::DallocChunk(Chunk *chunk) {
   size_t pind = sz_to_pind(chunk->size());
 
   chunk->set_state(Chunk::State::kDirty);
+  chunk->set_epoch(epoch_);
   if (chunk->is_slab()) {
     DeregisterRtreeInterior(chunk);
   }
 
   if (pind < kNumGePageClasses) {
-    Chunk *prev = Static::chunk_rtree()->LookUp(chunk->char_addr() - kPage);
-    if (nullptr != prev && prev->arena() == chunk->arena() && Chunk::State::kDirty == prev->state()) {
-      dirty_chunk_[get_fit_pind(prev)].erase(prev);
-      chunk = MergeChunk(prev, chunk);
-    }
-
-    Chunk *next = Static::chunk_rtree()->LookUp(chunk->char_addr() + chunk->size());
-    if (nullptr != next && next->arena() == chunk->arena() && Chunk::State::kDirty == next->state()) {
-      dirty_chunk_[get_fit_pind(next)].erase(next);
-      chunk = MergeChunk(chunk, next);
-    }
-
-    size_t new_pind = get_fit_pind(chunk);
-    if (new_pind < kNumGePageClasses) {
-      dirty_chunk_[new_pind].push(chunk);
-    } else {
-      OSDeleteChunk(chunk);
-    }
+    // TODO: limit the number of dirty chunks
+    dirty_chunk_[pind].push(chunk);
 
   } else {
     OSDeleteChunk(chunk);
@@ -287,7 +291,7 @@ ChunkManager::DallocChunk(Chunk *chunk) {
 
 void
 ChunkManager::TriggerGC() {
-  func_debug(logger, "epoch: {}", epoch_);
+  func_debug(logger, "epoch: {}", static_cast<int>(epoch_));
   for (size_t i = 0; i < kNumGePageClasses; ++i) {
     Chunk *curr = dirty_chunk_[i].first();
     while (curr != dirty_chunk_[i].end()) {
@@ -296,10 +300,7 @@ ChunkManager::TriggerGC() {
         curr = curr->next();
 
         dirty_chunk_[i].erase(temp);
-        OSUnmapChunk(temp);
-        // TODO: after we return the memory to OS but reserve the address,
-        // OS may map this address later in the later allocation. This causes
-        // the address reserved to be useless.
+        OSReleaseChunk(temp);
         PushCleanChunk(i, temp);
       } else {
         curr = curr->next();
