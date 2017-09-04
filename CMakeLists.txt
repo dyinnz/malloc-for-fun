@@ -2,7 +2,7 @@ project(malloc-for-fun)
 
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wextra -g")
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wextra -g -fPIC")
 
 # googletest
 add_subdirectory(googletest)
@@ -73,8 +73,22 @@ add_executable(test_multithread
         test/test_multithread.cc
         test/test_common.h)
 
+if (APPLE)
+
 target_link_libraries(test_multithread
         gtest
         boost_system
-        boost_thread-mt
+	boost_thread-mt
         )
+
+endif (APPLE)
+
+if (UNIX)
+
+target_link_libraries(test_multithread
+        gtest
+        boost_system
+	boost_thread
+        )
+
+endif (UNIX)
