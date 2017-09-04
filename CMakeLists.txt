@@ -75,20 +75,20 @@ add_executable(test_multithread
 
 if (APPLE)
 
-target_link_libraries(test_multithread
-        gtest
-        boost_system
-	boost_thread-mt
-        )
+    target_link_libraries(test_multithread
+            gtest
+            boost_system
+            boost_thread-mt
+            )
 
 endif (APPLE)
 
-if (UNIX)
+if (LINUX)
 
-target_link_libraries(test_multithread
-        gtest
-        boost_system
-	boost_thread
-        )
+    target_link_libraries(test_multithread
+            gtest
+            boost_system
+            boost_thread
+            )
 
-endif (UNIX)
+endif (LINUX)
