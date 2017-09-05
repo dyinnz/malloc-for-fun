@@ -55,9 +55,9 @@ class CacheBin {
   const size_t capacity_;
   const size_t ind_;
   const size_t cs_;
-  size_t num_ {0};
-  size_t fill_count_ {kInitFillCount};
-  int low_mark_ {0};
+  size_t num_{0};
+  size_t fill_count_{kInitFillCount};
+  int low_mark_{0};
 } CACHELINE_ALIGN;
 
 /*------------------------------------------------------------------*/
@@ -159,7 +159,7 @@ CacheBin::PushRegion(void *ptr) {
   if (unlikely(capacity_ == num_)) {
     // user has freed too much memory and the bin is full now.
     // we always flush 3/4 caches under this circumstance
-    FlushCaches(capacity_ * 3 /4);
+    FlushCaches(capacity_ * 3 / 4);
 
     // user intends to use less memory
     fill_count_ = std::max(fill_count_ / 2, kInitFillCount);
@@ -306,15 +306,16 @@ ThreadAllocator::Event() {
 
 inline void
 ThreadAllocator::TriggerGC() {
-  gc_index_ += 1;
-  while (nullptr == cache_bins_[gc_index_]) {
+  do {
     gc_index_ += 1;
     if (gc_index_ >= kNumSmallClasses) {
       gc_index_ = 0;
     }
-  }
-  func_debug(logger, "bin[{}] gc", gc_index_);
+  } while (nullptr == cache_bins_[gc_index_]);
+
+  func_debug(logger, "cache bin[{}] gc", gc_index_);
   cache_bins_[gc_index_]->GarbageCollect();
+
 }
 
 inline const ThreadAllocator::CacheStatArray &

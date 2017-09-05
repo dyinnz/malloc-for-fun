@@ -10,6 +10,8 @@
 #include "ffmalloc.h"
 #include "simplelogger.h"
 
+static ffmalloc::ChunkRTree g_chunk_rtree;
+static ffmalloc::BaseAllocator g_root_alloc;
 simplelogger::Logger logger(simplelogger::kDebug);
 
 namespace ffmalloc {
@@ -36,12 +38,9 @@ Static::Static() {
 }
 
 void Static::Init() {
-  static ChunkRTree s_chunk_rtree;
-  static BaseAllocator s_root_alloc;
-
   num_arenas_ = std::thread::hardware_concurrency();
-  root_alloc_ = &s_root_alloc;
-  chunk_rtree_ = &s_chunk_rtree;
+  root_alloc_ = &g_root_alloc;
+  chunk_rtree_ = &g_chunk_rtree;
   InitTLS();
 }
 
