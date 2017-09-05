@@ -5,6 +5,7 @@
 #pragma once
 
 #include <atomic>
+#include <pthread.h>
 #include "basic.h"
 
 namespace ffmalloc {
@@ -47,15 +48,26 @@ class Static {
   }
 
   static ThreadAllocator *thread_alloc() {
+#if defined(FF_USE_TLS)
     if (unlikely(nullptr == thread_alloc_)) {
-      create_thread_allocator();
+      return create_thread_allocator();
     }
     return thread_alloc_;
+#else
+    auto *alloc = static_cast<ThreadAllocator*>(pthread_getspecific(pthread_tls_key_));
+    if (unlikely(nullptr == alloc)) {
+      return create_thread_allocator();
+    }
+    return alloc;
+#endif
   }
 
+  static size_t GetAllocatedSize(void *ptr);
+  static void InitTLS();
+
  private:
-  static void init();
-  static void create_thread_allocator();
+  static void Init();
+  static ThreadAllocator* create_thread_allocator();
 
  private:
   static Static init_data_;
@@ -64,8 +76,12 @@ class Static {
   static size_t num_arenas_;
   static ChunkRTree *chunk_rtree_;
   static BaseAllocator *root_alloc_;
-  static thread_local ThreadAllocator *thread_alloc_
-      __attribute__ ((tls_model("initial-exec")));
+
+#if defined(FF_USE_TLS)
+  static thread_local ThreadAllocator *thread_alloc_ __attribute__ ((tls_model("initial-exec")));
+#else
+  static pthread_key_t pthread_tls_key_;
+#endif
 };
 
 } // end of namespace ffmalloc

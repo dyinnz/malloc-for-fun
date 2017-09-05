@@ -8,7 +8,6 @@
 #include "size.h"
 #include "pages.h"
 #include "list.h"
-#include "simplelogger.h"
 
 namespace ffmalloc {
 
@@ -41,7 +40,7 @@ class BaseAllocator {
     } else {
       void *addr = OSAllocMap(nullptr, cs);
       if (nullptr == addr) {
-        func_error(logger, "map large memory from os failed.");
+        fprintf(stderr, "BaseAllocator::Alloc() map from os failed\n");
         return nullptr;
       }
       assert(reinterpret_cast<uintptr_t>(addr) % kPage == 0);
@@ -101,7 +100,7 @@ class BaseAllocator {
     size_t slab_size = lookup_slab_size(sind);
     char *addr = static_cast<char *>(OSAllocMap(nullptr, slab_size));
     if (nullptr == addr) {
-      func_error(logger, "map os for small nodes failed. cs: {} slab_size: {}", cs, slab_size);
+      fprintf(stderr, "BaseAllocator::AllocSmallNodes() map from os failed\n");
       return false;
     }
 
@@ -121,5 +120,6 @@ class BaseAllocator {
   List<BaseNode> free_lists_[kNumSmallClasses];
   std::mutex mutex_;
 } CACHELINE_ALIGN;
+
 
 } // end of namespace ffmalloc

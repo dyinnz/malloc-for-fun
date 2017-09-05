@@ -8,6 +8,7 @@
 #include <iostream>
 #include <mutex>
 #include <array>
+#include "simplelogger.h"
 
 namespace ffmalloc {
 

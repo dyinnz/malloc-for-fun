@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <cstdlib>
 
+#define MEMORY_STAT
+#define OVERRIDE_LIBC
+
 namespace ffmalloc {
 
 constexpr size_t kCacheLine = 64;
@@ -13,9 +16,9 @@ constexpr size_t kStandardChunk = kMinAllocMmap;
 constexpr uint16_t kNonSlabAttr = 0;
 
 #ifdef MEMORY_STAT
-constexpr bool g_stat = false;
-#else
 constexpr bool g_stat = true;
+#else
+constexpr bool g_stat = false;
 #endif
 
 /*
@@ -56,5 +59,11 @@ bool atomic_cas_simple(T *ptr, T desired) {
 }
 
 #define CACHELINE_ALIGN __attribute__((aligned (64)))
+
+#if defined(__APPLE__) && defined(OVERRIDE_LIBC)
+// nothing
+#else
+#define FF_USE_TLS
+#endif
 
 } // end of namespace ffmalloc

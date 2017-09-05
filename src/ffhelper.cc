@@ -5,10 +5,9 @@
 #include <sstream>
 #include <iomanip>
 #include "ffhelper.h"
+#include "simplelogger.h"
 
 namespace ffmalloc {
-
-using namespace simplelogger;
 
 void AllocatorStatReport(ThreadAllocator &thread_alloc) {
   std::ostringstream oss;

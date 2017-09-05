@@ -7,6 +7,7 @@
 #include <cmath>
 #include "size_classes.h"
 #include "arena.h"
+#include "simplelogger.h"
 
 namespace ffmalloc {
 

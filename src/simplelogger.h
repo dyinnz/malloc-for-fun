@@ -9,12 +9,17 @@
 
 #include <cassert>
 #include <sstream>
-// #include <string>
 #include <utility>
+#include "base_stl_alloc.h"
 
 #define DEBUG
 
 namespace simplelogger {
+
+typedef std::basic_ostringstream<
+    char,
+    std::char_traits<char>,
+    ffmalloc::BaseStlAllocator<char>> ff_ostringstream;
 
 #define func_debug(__logger, __format, ...) do { \
   __logger.debug("{}() " __format, __func__, ##__VA_ARGS__); \
@@ -48,10 +53,10 @@ constexpr int kMaxLevel{5};
 /**
  * auxiliary function
  */
-inline void parse_format(std::ostringstream &ss, const char *format) { ss << format; }
+inline void parse_format(ff_ostringstream &ss, const char *format) { ss << format; }
 
 template<typename T, typename ...A>
-void parse_format(std::ostringstream &ss, const char *format, const T &v, A&&... args);
+void parse_format(ff_ostringstream &ss, const char *format, const T &v, A &&... args);
 
 
 /*------------------------------------------------------------------*/
@@ -80,28 +85,28 @@ class Logger {
   }
 
   template<typename ...A>
-  void debug(A&&... args) {
+  void debug(A &&... args) {
 #ifdef DEBUG
     print_wrapper(kDebug, std::forward<A>(args)...);
 #endif
   }
 
   template<typename ...A>
-  void log(A&&... args) {
+  void log(A &&... args) {
     print_wrapper(kLog, std::forward<A>(args)...);
   }
   template<typename ...A>
-  void notice(A&&... args) {
+  void notice(A &&... args) {
     print_wrapper(kNotice, std::forward<A>(args)...);
   }
   template<typename ...A>
-  void error(A&&... args) {
+  void error(A &&... args) {
     print_wrapper(kError, std::forward<A>(args)...);
   }
 
  private:
   template<typename ...A>
-  void print_wrapper(Level level, A&&... args);
+  void print_wrapper(Level level, A &&... args);
 
   Level _log_level{kError};
   FILE *_fp[kMaxLevel];
@@ -120,10 +125,10 @@ class Logger {
 // implement
 
 template<typename T, typename ...A>
-void parse_format(std::ostringstream &ss,
+void parse_format(ff_ostringstream &ss,
                   const char *format,
                   const T &v,
-                  A&&...              args) {
+                  A &&...              args) {
 
   assert(format);
   const char *p{format};
@@ -160,10 +165,9 @@ void parse_format(std::ostringstream &ss,
 /*----------------------------------------------------------------------------*/
 
 template<typename ...A>
-void Logger::print_wrapper(Level level, A&&... args) {
-
+void Logger::print_wrapper(Level level, A &&... args) {
   if (log_level() <= level) {
-    std::ostringstream ss;
+    ff_ostringstream ss;
     ss << kTag[level];
     parse_format(ss, std::forward<A>(args)...);
     ss << "\n";

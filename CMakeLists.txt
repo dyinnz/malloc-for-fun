@@ -29,14 +29,13 @@ add_library(ff_core.o OBJECT
         src/thread_alloc.h
         src/simplelogger.h
         src/arena.cc
-        src/base_alloc.cc
         src/chunk.cc
         src/size_classes.cc
         src/ffhelper.cc
         src/ffmalloc.cc
         src/pages.cc
         src/static.cc
-        src/simplelogger.cc)
+        src/base_stl_alloc.h)
 
 # executable
 add_executable(ff_dev
