@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "chunk.h"
+#include "simplelogger.h"
 
 namespace {
 

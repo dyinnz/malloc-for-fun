@@ -2,11 +2,11 @@
 #include <cstdio>
 #include <cstring>
 #include <cerrno>
+#include <cassert>
 
 #include <sys/mman.h>
 
 #include "basic.h"
-#include "simplelogger.h"
 
 namespace ffmalloc {
 
@@ -21,7 +21,6 @@ OSAllocMap(void *addr, size_t size) {
                    0, 0);
 
   if (MAP_FAILED == ret) {
-    func_error(logger, "mmap failed: {}, size: {}", strerror(errno), size);
     return nullptr;
   }
 
@@ -35,7 +34,7 @@ OSDallocMap(void *addr, size_t size) {
   assert(size % kPage == 0);
 
   if (-1 == munmap(addr, size)) {
-    func_error(logger, "munmap failed: {} size: {}", strerror(errno), size);
+    abort();
   }
 }
 
@@ -44,7 +43,6 @@ void OSReleasePage(void *addr, size_t size) {
   assert(size % kPage == 0);
 
   if (-1 == madvise(addr, size, MADV_FREE)) {
-    func_error(logger, "madvise set free failed: {} size: {}", strerror(errno), size);
     abort();
   }
 }

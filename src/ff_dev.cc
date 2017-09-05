@@ -73,11 +73,31 @@ void TestChunkManagerGC() {
   ff_free(k30);
 }
 
+void TestMAdvise() {
+  void *k20 = ff_malloc(2 * 1024 * 1024);
+  for (int i = 0; i < 10000; ++i) {
+    ff_free(ff_malloc(32 * 1024));
+  }
+  ff_free(k20);
+}
+
 int main() {
+  std::cout << "hello world" << std::endl;
 
-  logger.log("chunk size: {}", sizeof(Chunk));
+  std::cout << "standard malloc" << std::endl;
+  void *p = malloc(20 * 1024);
+  std::cout << p << std::endl;
+  free(p);
 
-  TestChunkManagerGC();
+  std::cout << "ff malloc" << std::endl;
+  p = ff_malloc(20 * 1024);
+  std::cout << p << std::endl;
+  ff_free(p);
+
+  // logger.log("chunk size: {}", sizeof(Chunk));
+
+  // TestChunkManagerGC();
+  // TestMAdvise();
 
   return 0;
 }
