@@ -13,14 +13,14 @@ void *ff_realloc(void *ptr, unsigned long size) noexcept;
 
 }
 
+namespace ffmalloc {
+
+namespace details {
+
 #ifdef __APPLE__
 
 #include <malloc/malloc.h>
 #include <cstring>
-
-namespace ffmalloc {
-
-namespace details {
 
 size_t mz_size(malloc_zone_t *zone, const void *ptr);
 
@@ -87,11 +87,11 @@ inline boolean_t mi_zone_locked(malloc_zone_t *) {
   return 0;  // Hopefully unneeded by us!
 }
 
+#endif // __APPLE__
+
 void ReplaceSystemAlloc();
 
 } // end of namespace details
 
 } // end of namespace ffmalloc
-
-#endif // __APPLE__
 

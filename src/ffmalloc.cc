@@ -35,11 +35,11 @@ void *ff_realloc(void *ptr, unsigned long size) noexcept {
 
 }
 
-#ifdef __APPLE__
-
 namespace ffmalloc {
 
 namespace details {
+
+#ifdef __APPLE__
 
 size_t mz_size(malloc_zone_t *zone, const void *ptr) {
   return Static::GetAllocatedSize(const_cast<void*>(ptr));
@@ -105,8 +105,14 @@ void ReplaceSystemAlloc() {
   malloc_zone_register(default_zone);
 }
 
+#else
+
+void ReplaceSystemAlloc() {
+}
+
+#endif
+
 } // end of namespace details
 
 } // end of namespace ffmalloc
 
-#endif // __APPLE__

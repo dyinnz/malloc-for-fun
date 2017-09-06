@@ -82,7 +82,7 @@ if (APPLE)
 
 endif (APPLE)
 
-if (LINUX)
+if (UNIX AND NOT APPLE)
 
     target_link_libraries(test_multithread
             gtest
@@ -90,4 +90,4 @@ if (LINUX)
             boost_thread
             )
 
-endif (LINUX)
+endif ()
