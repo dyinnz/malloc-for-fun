@@ -35,13 +35,13 @@ void *ff_realloc(void *ptr, unsigned long size) noexcept {
 
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(OVERRIDE_LIBC)
 
 namespace ffmalloc {
 
 namespace details {
 
-size_t mz_size(malloc_zone_t *zone, const void *ptr) {
+size_t mz_size(malloc_zone_t *, const void *ptr) {
   return Static::GetAllocatedSize(const_cast<void*>(ptr));
 }
 
@@ -109,4 +109,4 @@ void ReplaceSystemAlloc() {
 
 } // end of namespace ffmalloc
 
-#endif // __APPLE__
+#endif // __APPLE__ && OVERRIDE_LIBC

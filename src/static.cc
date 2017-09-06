@@ -34,7 +34,10 @@ Static::Static() {
   std::cout << "Static Constructor" << std::endl;
 #endif
   Init();
+
+#if defined(__APPLE__) && defined(OVERRIDE_LIBC)
   details::ReplaceSystemAlloc();
+#endif
 }
 
 void Static::Init() {
