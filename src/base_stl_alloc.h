@@ -27,6 +27,14 @@ class BaseStlAllocator {
     typedef BaseStlAllocator<Type> other;
   };
 
+  bool operator==(const BaseStlAllocator&) const {
+    return true;
+  }
+
+  bool operator!=(const BaseStlAllocator&) const {
+    return false;
+  }
+
   pointer address(reference x) const noexcept {
     return &x;
   }

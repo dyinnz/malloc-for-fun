@@ -2,6 +2,11 @@
 // Created by 郭映中 on 2017/8/23.
 //
 
+#if defined(__APPLE__) && defined(OVERRIDE_LIBC)
+#include <malloc/malloc.h>
+#endif
+
+#include <cstring>
 #include "ffmalloc.h"
 #include "static.h"
 #include "thread_alloc.h"
@@ -33,13 +38,13 @@ void *ff_realloc(void *ptr, unsigned long size) noexcept {
   return ffmalloc::Static::thread_alloc()->ThreadRealloc(ptr, size);
 }
 
-}
-
-#if defined(__APPLE__) && defined(OVERRIDE_LIBC)
+} // end of extern "C"
 
 namespace ffmalloc {
 
 namespace details {
+
+#if defined(__APPLE__) && defined(OVERRIDE_LIBC)
 
 size_t mz_size(malloc_zone_t *, const void *ptr) {
   return Static::GetAllocatedSize(const_cast<void*>(ptr));
@@ -100,13 +105,18 @@ void ReplaceSystemAlloc() {
   malloc_zone_register(&ffmalloc_zone);
 
   malloc_zone_t *default_zone = GetDefaultZone();
-  std::cout << default_zone << " " << default_zone->zone_name << std::endl;
   malloc_zone_unregister(default_zone);
   malloc_zone_register(default_zone);
 }
+
+#else
+
+void ReplaceSystemAlloc() {
+}
+
+#endif // __APPLE__ && OVERRIDE_LIBC
 
 } // end of namespace details
 
 } // end of namespace ffmalloc
 
-#endif // __APPLE__ && OVERRIDE_LIBC

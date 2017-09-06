@@ -4,6 +4,10 @@
 
 #pragma once
 
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#endif
+
 extern "C" {
 
 void *ff_malloc(unsigned long size) noexcept;
@@ -13,14 +17,11 @@ void *ff_realloc(void *ptr, unsigned long size) noexcept;
 
 }
 
-#ifdef __APPLE__
-
-#include <malloc/malloc.h>
-#include <cstring>
-
 namespace ffmalloc {
 
 namespace details {
+
+#ifdef __APPLE__
 
 size_t mz_size(malloc_zone_t *zone, const void *ptr);
 
@@ -87,11 +88,11 @@ inline boolean_t mi_zone_locked(malloc_zone_t *) {
   return 0;  // Hopefully unneeded by us!
 }
 
+#endif // __APPLE__
+
 void ReplaceSystemAlloc();
 
 } // end of namespace details
 
 } // end of namespace ffmalloc
-
-#endif // __APPLE__
 
