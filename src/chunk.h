@@ -107,7 +107,7 @@ class Chunk : public ListNode<Chunk> {
   SlabBitmap slab_bitmap_;
 };
 
-typedef List<Chunk> ChunkList;
+typedef ListWithConstructor<Chunk> ChunkList;
 // typedef RadixTree<Chunk> ChunkRTree;
 
 class ChunkManager {

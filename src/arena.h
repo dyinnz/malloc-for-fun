@@ -16,7 +16,7 @@ namespace ffmalloc {
 
 class Arena {
  private:
-  typedef List<Chunk> SlabBin;
+  typedef ListWithConstructor<Chunk> SlabBin;
 
  public:
   struct SmallStat {

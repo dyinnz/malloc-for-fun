@@ -18,8 +18,12 @@ class RadixTree {
 
   struct RadixNode {
     RadixNode() {
+    }
+
+    void init() {
       memset(children, 0, sizeof(RadixNode *) * kLayerSize);
     }
+
     union {
       RadixNode *children[kLayerSize];
       T *elements[kLayerSize];
@@ -27,6 +31,13 @@ class RadixTree {
   };
 
  public:
+  RadixTree() {
+  }
+
+  void init() {
+    root_.init();
+  }
+
   void Insert(void *addr, T *element) {
     // std::cout << __func__ << "(): addr: " << addr << " elem: " << element << std::endl;
     const uintptr_t key = reinterpret_cast<uintptr_t>(addr);

@@ -84,6 +84,18 @@ void TestMAdvise() {
 int main() {
   std::cout << "hello world" << std::endl;
 
+  printf("\n");
+  AllocatorStatReport(*Static::thread_alloc());
+  printf("\n");
+  for (size_t i = 0; i < Static::num_arena(); ++i) {
+    if (nullptr != Static::get_arena(i)) {
+      AllocatorStatReport(*Static::get_arena(i));
+      printf("\n");
+      AllocatorStatReport(Static::get_arena(i)->chunk_manager());
+      printf("\n");
+    }
+  }
+
   std::cout << "standard malloc" << std::endl;
   void *p = malloc(20 * 1024);
   std::cout << p << std::endl;
@@ -97,7 +109,6 @@ int main() {
   // logger.log("chunk size: {}", sizeof(Chunk));
 
   // TestChunkManagerGC();
-  // TestMAdvise();
 
   return 0;
 }

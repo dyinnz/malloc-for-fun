@@ -10,9 +10,11 @@
 #include "ffmalloc.h"
 #include "simplelogger.h"
 
+static ffmalloc::RootAllocator g_root_alloc;
 static ffmalloc::ChunkRTree g_chunk_rtree;
-static ffmalloc::BaseAllocator g_root_alloc;
-simplelogger::Logger logger(simplelogger::kDebug);
+
+static constexpr auto kLogLevel = simplelogger::kDebug;
+simplelogger::Logger logger;
 
 namespace ffmalloc {
 
@@ -26,7 +28,7 @@ Arena *Static::arenas_[kMaxCPUs] = {nullptr};
 std::atomic_ulong Static::arena_index_{0};
 size_t Static::num_arenas_{1};
 ChunkRTree *Static::chunk_rtree_{nullptr};
-BaseAllocator *Static::root_alloc_{nullptr};
+RootAllocator *Static::root_alloc_{nullptr};
 Static Static::init_data_;
 
 Static::Static() {
@@ -41,18 +43,24 @@ Static::Static() {
 }
 
 void Static::Init() {
-  num_arenas_ = std::thread::hardware_concurrency();
-  root_alloc_ = &g_root_alloc;
-  chunk_rtree_ = &g_chunk_rtree;
-  InitTLS();
+  if (chunk_rtree_ == nullptr) {
+    num_arenas_ = std::thread::hardware_concurrency();
+
+    g_root_alloc.init();
+    g_chunk_rtree.init();
+    logger.init(kLogLevel);
+
+    root_alloc_ = &g_root_alloc;
+    chunk_rtree_ = &g_chunk_rtree;
+    InitTLS();
+  }
 }
 
 ThreadAllocator *Static::create_thread_allocator() {
   // Ensure that all the static variables has been set correctly
-  // We can call init() twice and the values are the same.
-  // if (chunk_rtree_ == nullptr) {
-  //   init();
-  // }
+  if (chunk_rtree_ == nullptr) {
+    Init();
+  }
 
   auto tmp_alloc = Static::root_alloc()->New<ThreadAllocator>(*next_arena());
 

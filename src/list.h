@@ -26,14 +26,18 @@ class ListNode {
   }
 
  private:
-  T *prev_{nullptr};
-  T *next_{nullptr};
+  T *prev_;
+  T *next_;
 };
 
 template<class T>
 class List {
  public:
   List() {
+  }
+
+  void init() {
+    size_ = 0;
     dummy_head()->set_prev(dummy_head());
     dummy_head()->set_next(dummy_head());
   }
@@ -135,8 +139,18 @@ class List {
   }
 
  private:
-  size_t size_{0};
+  size_t size_;
   ListNode<T> dummy_head_;
+};
+
+template<class T>
+class ListWithConstructor : public List<T> {
+  public:
+    ListWithConstructor() {
+      this->init();
+    }
+  private:
+    using List<T>::init;
 };
 
 } // end of namespace ffmalloc

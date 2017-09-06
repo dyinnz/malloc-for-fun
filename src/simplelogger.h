@@ -66,7 +66,11 @@ void parse_format(ff_ostringstream &ss, const char *format, const T &v, A &&... 
  */
 class Logger {
  public:
-  Logger(Level level = kLog) : _log_level(level) {
+  Logger() {
+  }
+
+  void init(Level level = kLog) {
+    _log_level = level;
     for (int l = 0; l < kMaxLevel; ++l) {
       _fp[l] = stdout;
     }
@@ -108,7 +112,7 @@ class Logger {
   template<typename ...A>
   void print_wrapper(Level level, A &&... args);
 
-  Level _log_level{kError};
+  Level _log_level;
   FILE *_fp[kMaxLevel];
 
   const char *kTag[kMaxLevel]{
@@ -164,6 +168,9 @@ void parse_format(ff_ostringstream &ss,
 
 /*----------------------------------------------------------------------------*/
 
+
+#include <iostream>
+
 template<typename ...A>
 void Logger::print_wrapper(Level level, A &&... args) {
   if (log_level() <= level) {
@@ -172,6 +179,7 @@ void Logger::print_wrapper(Level level, A &&... args) {
     parse_format(ss, std::forward<A>(args)...);
     ss << "\n";
     fwrite(ss.str().c_str(), 1, ss.str().size(), _fp[level]);
+    // std::cout << "Hello" << std::endl;
   }
 }
 

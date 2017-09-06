@@ -38,6 +38,34 @@ void *ff_realloc(void *ptr, unsigned long size) noexcept {
   return ffmalloc::Static::thread_alloc()->ThreadRealloc(ptr, size);
 }
 
+#if defined(__linux__) && defined(OVERRIDE_LIBC)
+
+CACHELINE_ALIGN
+void *malloc(unsigned long size) noexcept {
+  return ffmalloc::Static::thread_alloc()->ThreadAlloc(size);
+}
+
+CACHELINE_ALIGN
+void free(void *ptr) noexcept {
+  ffmalloc::Static::thread_alloc()->ThreadDalloc(ptr);
+}
+
+CACHELINE_ALIGN
+void *calloc(unsigned long count, unsigned long size) noexcept {
+  unsigned long total_size = count * size;
+  void *ptr = ffmalloc::Static::thread_alloc()->ThreadAlloc(total_size);
+  if (likely(nullptr != ptr)) {
+    memset(ptr, 0, total_size);
+  }
+  return ptr;
+}
+
+CACHELINE_ALIGN
+void *realloc(void *ptr, unsigned long size) noexcept {
+  return ffmalloc::Static::thread_alloc()->ThreadRealloc(ptr, size);
+}
+#endif
+
 } // end of extern "C"
 
 namespace ffmalloc {

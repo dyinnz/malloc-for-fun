@@ -11,17 +11,23 @@
 
 namespace ffmalloc {
 
-class BaseAllocator {
+class RootAllocator {
  private:
   struct Header {
     unsigned long size;
   };
-  struct BaseNode : ListNode<BaseNode> {
+  struct RootNode : ListNode<RootNode> {
   };
 
   static_assert(sizeof(Header) == 8, "the size of Header of BaseAllocator Node should be 8");
 
  public:
+  void init() {
+    for (size_t i = 0; i < kNumSmallClasses; ++i) {
+      free_lists_[i].init();
+    }
+  }
+
   void *Alloc(size_t size) {
     size_t size_with_meta = size + kCacheLine /* + sizeof(Header) */ ;
     size_t ind = sz_to_ind(size_with_meta);
@@ -34,7 +40,7 @@ class BaseAllocator {
           return nullptr;
         }
       }
-      BaseNode *node = free_lists_[ind].pop();
+      RootNode *node = free_lists_[ind].pop();
       return node;
 
     } else {
@@ -58,7 +64,7 @@ class BaseAllocator {
     );
     if (cs <= kMaxSmallClass) {
       std::lock_guard<std::mutex> guard(mutex_);
-      free_lists_[sz_to_ind(cs)].push(reinterpret_cast<BaseNode *>(ptr));
+      free_lists_[sz_to_ind(cs)].push(reinterpret_cast<RootNode *>(ptr));
     } else {
       void *page_ptr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(ptr) & (~(kPage - 1)));
       OSDallocMap(page_ptr, cs);
@@ -106,7 +112,7 @@ class BaseAllocator {
 
     for (size_t offset = 0; offset < slab_size; offset += cs) {
       char *curr_addr = addr + offset;
-      BaseNode *list_node = reinterpret_cast<BaseNode *>(
+      RootNode *list_node = reinterpret_cast<RootNode *>(
           cacheline_ceil(reinterpret_cast<size_t>(curr_addr + sizeof(Header)))
       );
       *reinterpret_cast<unsigned long *>(reinterpret_cast<char *>(list_node) - sizeof(Header)) = cs;
@@ -117,9 +123,18 @@ class BaseAllocator {
   }
 
  private:
-  List<BaseNode> free_lists_[kNumSmallClasses];
+  List<RootNode> free_lists_[kNumSmallClasses];
   std::mutex mutex_;
 } CACHELINE_ALIGN;
+
+class BaseAllocator : public RootAllocator {
+  public:
+    BaseAllocator() {
+      this->init();
+    }
+  private:
+    using RootAllocator::init;
+};
 
 
 } // end of namespace ffmalloc

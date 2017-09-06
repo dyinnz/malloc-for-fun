@@ -16,7 +16,7 @@ class Chunk;
 template<class T>
 class RadixTree;
 typedef RadixTree<Chunk> ChunkRTree;
-class BaseAllocator;
+class RootAllocator;
 
 class Static {
  private:
@@ -43,7 +43,7 @@ class Static {
     return chunk_rtree_;
   }
 
-  static BaseAllocator *root_alloc() {
+  static RootAllocator *root_alloc() {
     return root_alloc_;
   }
 
@@ -75,7 +75,7 @@ class Static {
   static std::atomic_ulong arena_index_;
   static size_t num_arenas_;
   static ChunkRTree *chunk_rtree_;
-  static BaseAllocator *root_alloc_;
+  static RootAllocator *root_alloc_;
 
 #if defined(FF_USE_TLS)
   static thread_local ThreadAllocator *thread_alloc_ __attribute__ ((tls_model("initial-exec")));
