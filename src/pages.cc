@@ -42,7 +42,7 @@ void OSReleasePage(void *addr, size_t size) {
   assert(nullptr != addr);
   assert(size % kPage == 0);
 
-  if (-1 == madvise(addr, size, MADV_FREE)) {
+  if (-1 == madvise(addr, size, MADV_DONTNEED)) {
     abort();
   }
 }
